@@ -18,6 +18,8 @@ global $wpdb;
 
 if ( is_multisite() ) {
 
+    /** @var $wpdb WPDB */
+
 	$blogs = $wpdb->get_results( "SELECT blog_id FROM {$wpdb->blogs}", ARRAY_A );
 		/* @TODO: delete all transient, options and files you may have added
 		delete_transient( 'TRANSIENT_NAME' );
