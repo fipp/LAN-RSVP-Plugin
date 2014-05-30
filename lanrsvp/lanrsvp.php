@@ -26,6 +26,15 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /*----------------------------------------------------------------------------*
+ * Common classes
+ *----------------------------------------------------------------------------*/
+require_once( plugin_dir_path( __FILE__ ) . 'includes/class-event.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'includes/class-user.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'includes/class-db.php' );
+require_once( ABSPATH . 'wp-includes/class-phpass.php');
+
+
+/*----------------------------------------------------------------------------*
  * Public-Facing Functionality
  *----------------------------------------------------------------------------*/
 
