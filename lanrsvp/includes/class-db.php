@@ -10,6 +10,8 @@ class DB {
     const EVENT_TABLE_NAME = 'lanrsvp_event';
     const USER_TABLE_NAME = 'lanrsvp_user';
     const ATTENDEE_TABLE_NAME = 'lanrsvp_attendee';
+    const SEAT_TABLE_NAME = 'lanrsvp_seat';
+
     const DEBUG = true;
 
     public static function install () {
@@ -40,23 +42,39 @@ class DB {
             $wpdb->prefix . self::EVENT_TABLE_NAME
         );
 
+        $seat_sql = sprintf ("CREATE TABLE %s (
+                event_id MEDIUMINT NOT NULL,
+                seat_row SMALLINT NOT NULL,
+                seat_column SMALLINT NOT NULL,
+                start_status ENUM ('free', 'busy'),
+                PRIMARY KEY  (event_id, seat_row, seat_column),
+                FOREIGN KEY (event_id) REFERENCES %s (event_id)
+            );",
+            $wpdb->prefix . self::SEAT_TABLE_NAME,
+            $wpdb->prefix . self::EVENT_TABLE_NAME
+        );
+
         $attendee_sql = sprintf ("CREATE TABLE %s (
                 event_id MEDIUMINT NOT NULL,
                 user_id MEDIUMINT NOT NULL,
-                seat MEDIUMINT,
+                seat_row SMALLINT,
+                seat_column SMALLINT,
                 registration_date TIMESTAMP DEFAULT NOW(),
                 PRIMARY KEY  (event_id, user_id),
                 FOREIGN KEY (event_id) REFERENCES %s (event_id),
-                FOREIGN KEY (user_id) REFERENCES %s (user_id)
+                FOREIGN KEY (user_id) REFERENCES %s (user_id),
+                FOREIGN KEY (event_id, seat_row, seat_column) REFERENCES %s (event_id, seat_row, seat_column)
             );",
             $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
             $wpdb->prefix . self::EVENT_TABLE_NAME,
-            $wpdb->prefix . self::USER_TABLE_NAME
+            $wpdb->prefix . self::USER_TABLE_NAME,
+            $wpdb->prefix . self::SEAT_TABLE_NAME
         );
 
         require_once ( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta ( $user_sql );
         dbDelta ( $event_sql );
+        dbDelta ( $seat_sql );
         dbDelta ( $attendee_sql );
 
         if (self::DEBUG) {
@@ -68,37 +86,9 @@ class DB {
         /** @var $wpdb WPDB */
         global $wpdb;
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::ATTENDEE_TABLE_NAME));
+        $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::SEAT_TABLE_NAME));
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::EVENT_TABLE_NAME));
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::USER_TABLE_NAME));
-    }
-
-    public static function populate_sample_data() {
-        /** @var $wpdb WPDB */
-        global $wpdb;
-
-        $sqlList = array(
-            sprintf("INSERT INTO %s (email, full_name, password) VALUES('test1@example.com', 'Test 1', '%s');",
-                $wpdb->prefix . self::USER_TABLE_NAME, wp_hash_password('test2password')),
-            sprintf("INSERT INTO %s (email, full_name, password) VALUES('test2@example.com', 'Test 2', '%s');",
-                $wpdb->prefix . self::USER_TABLE_NAME, wp_hash_password('test3password')),
-            sprintf("INSERT INTO %s (email, full_name, password) VALUES('test3@example.com', 'Test 3', '%s');",
-                $wpdb->prefix . self::USER_TABLE_NAME, wp_hash_password('test4password')),
-            sprintf("INSERT INTO %s (email, full_name, password) VALUES('test4@example.com', 'Test 4', '%s');",
-                $wpdb->prefix . self::USER_TABLE_NAME, wp_hash_password('test5password')),
-
-            sprintf("INSERT INTO %s (event_title, from_date, to_date) VALUES('Meldal-LAN 2014', '2014-06-06 18:00:00', '2014-06-08 18:00:00');",
-                $wpdb->prefix . self::EVENT_TABLE_NAME),
-
-            sprintf("INSERT INTO %s (event_id, user_id) VALUES(1, 2);",
-                $wpdb->prefix . self::ATTENDEE_TABLE_NAME),
-            sprintf("INSERT INTO %s (event_id, user_id, seat) VALUES(1, 4, 52);",
-                $wpdb->prefix . self::ATTENDEE_TABLE_NAME)
-
-        );
-
-        foreach ($sqlList as $sql) {
-            $wpdb->query($sql);
-        }
     }
 
     public static function get_attendees ($event_id) {
@@ -179,4 +169,92 @@ class DB {
         return $wpdb->get_results($sql);
     }
 
+    public static function populate_sample_data() {
+        $names = [
+            'Cristie Dao',
+            'Gilda Bain',
+            'Angelia Loose',
+            'Barton Dohrmann',
+            'Angelita Pattison',
+            'Teodoro Babineau',
+            'Queen Jamison',
+            'Albertha Snellgrove',
+            'Fernando Prill',
+            'Dara Linz',
+            'Elidia Vidaurri',
+            'Andre Brandt',
+            'Krysten Tharrington',
+            'Jacquelynn Metzer',
+            'Rosita Grow',
+            'Merrill Ruggieri',
+            'Keena Wardlow',
+            'Dia Casella',
+            'Cherry Smtih',
+            'Aurelia Bothe'
+        ];
+
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        // Insert users
+        foreach ($names as $name) {
+            $words = preg_split('/\s+/', $name);
+            $email = join('.', $words) . '@gmail.com';
+            $password = wp_hash_password(strtolower(join('', $words)));
+            $wpdb->query(
+                sprintf(
+                    "INSERT INTO %s (email, full_name, password) VALUES('%s', '%s', '%s');",
+                    $wpdb->prefix . self::USER_TABLE_NAME,
+                    $email,
+                    $name,
+                    $password
+                )
+            );
+        }
+
+        // Insert events
+        $wpdb->query(
+            sprintf(
+                "INSERT INTO %s (event_title, from_date, to_date) VALUES('Meldal-LAN 2014', '2014-06-06 18:00:00', '2014-06-08 18:00:00');",
+                $wpdb->prefix . self::EVENT_TABLE_NAME
+            )
+        );
+
+        // Insert seats
+        for ($i = 0; $i < 50; $i++) {
+            $col = rand(0,30);
+            $row = rand(0,30);
+
+            $statuses = array(
+                'free',
+                'busy',
+            );
+            $key = array_rand($statuses);
+            $status = $statuses[$key];
+
+            $wpdb->query(
+                sprintf(
+                    "INSERT INTO %s (event_id, seat_row, seat_column, start_status) VALUES('%s', '%s', '%s', '%s');",
+                    $wpdb->prefix . self::SEAT_TABLE_NAME,
+                    1,
+                    $row,
+                    $col,
+                    $status
+                )
+            );
+        }
+
+        // Insert attendees
+        for ($i = 1; $i <= count($names); $i++) {
+            if (rand(0, 1)) {
+                $wpdb->query(
+                    sprintf(
+                        "INSERT INTO %s (event_id, user_id) VALUES(1, '%s');",
+                        $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
+                        $i
+                    )
+                );
+            }
+        }
+    }
 } 
