@@ -80,8 +80,8 @@ class LanRsvp {
         add_shortcode( 'lanrsvp', array( $this, 'shortcode_handler_lanrsvp' ) );
 
         // AJAX login
-        add_action('wp_ajax_login', array( $this, 'login' ));
-        add_action('wp_ajax_nopriv_login', array( $this, 'login' ));
+        add_action('wp_ajax_login', array( $this, 'ajaxLogin'));
+        add_action('wp_ajax_nopriv_login', array( $this, 'ajaxLogin'));
     }
 
     /**
@@ -245,6 +245,7 @@ class LanRsvp {
      * @since    1.0.0
      */
     private static function single_deactivate() {
+        DB::uninstall();
     }
 
     /**
@@ -307,7 +308,64 @@ class LanRsvp {
     }
 
     function shortcode_handler_lanrsvp ( $attrs ) {
+        if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
+            return $this->getAttendeesTable($attrs['event_id']);
+        } else {
+            return 'LAN RSVP Plugin:<br />Could not recognize shortcode.<br />Valid example: [lanrsvp event_id="12"]';
+        }
+    }
+
+    function getAttendeesTable ( $event_id ) {
+        $title = DB::get_event($event_id);
+        $attendees = DB::get_attendees($event_id);
+
+        $html = 'No-name event';
+        if (isset($title)) {
+            $html = sprintf(
+                "<h1>%s</h1>",
+                $title[0]->{'event_title'}
+            );
+
+            $html .= sprintf(
+                "<ul><li>From date: %s</li><li>To date: %s</li><li>Seats available: %s</li></ul>",
+                $title[0]->{'from_date'},
+                $title[0]->{'to_date'},
+                $title[0]->{'seats_available'} || 'Unlimited'
+            );
+
+        }
+
+        $html .= '<table>';
+
+        if ( isset( $attendees )) {
+            $html .= '<tr>';
+            foreach ($attendees[0] as $key => $attribute) {
+                $html .= "<th>$key</th>";
+            }
+            $html .= '</tr>';
+
+            foreach ($attendees as $attendee) {
+                $html .= '<tr>';
+                foreach ($attendee as $attribute) {
+                    $html .= "<td>$attribute</td>";
+                }
+                $html .= '</tr>';
+            }
+        } else {
+            $html .= "<tr>No attendees was found for event '$event_id'</tr>";
+        }
+
+        $html .= '</table>';
+
+        return $html;
+    }
+
+    function getLoginForm ($message = null) {
         $ajax_url = admin_url('admin-ajax.php');
+
+        if ( isset($message) ) {
+            $message = "<tr><td colspan='2' class='red'>$message</td></tr>";
+        }
 
         return <<<HTML
 <div class="lanrsvp">
@@ -318,48 +376,61 @@ class LanRsvp {
         <table>
             <tr><td>E-mail:</td><td><input type="email" required value="test@test.com" /></td></tr>
             <tr><td>Password:</td><td><input type="password" required value="testpassword" /></td></tr>
+            {$message}
             <tr><td colspan="2"><input type="submit" value="Log in" /></td></tr>
+            <tr>
+                <td colspan="2">
+                    <a href="#" class="forgotPassword">Forgot password</a> -
+                    <a href="#" class="registerNewUser">Register new user</a>
+                </td>
+            </tr>
         </table>
     </form>
 </div>
 HTML;
     }
 
-    function login() {
+    function ajaxLogin() {
         /** @var $wpdb WPDB */
         global $wpdb;
 
+        // get the HTTP parameters
         $email = $_REQUEST['email'];
         $password_plain = $_REQUEST['password'];
+        $password_hash = null; // to be set
 
-        $sql =  $wpdb->prepare(
-            "SELECT password FROM wp_lanrsvp_user WHERE email = %s",
-            $email
-        );
+        // this variable will determine what we output at the end
+        $is_correct = false;
 
-        $res = $wpdb->get_results($sql);
-
+        // get $password_hash for $email
+        $res = DB::getPasswordHash(null,$email);
         if (isset( $res[0]->{'password'} )) {
             $password_hash = $res[0]->{'password'};
         }
 
-        $this->_log($password_plain);
-        $this->_log($password_hash);
-
-        $wp_hasher = new PasswordHash(8, TRUE);
-        if ( $wp_hasher->CheckPassword( $password_plain, $password_hash )) {
-            $this->_log("match");
-        } else {
-            $this->_log("no match");
+        // If $password_hash was set, check if MD5 of $password_plain resolves to it
+        if ( isset($password_hash)) {
+            $wp_hasher = new PasswordHash(8, TRUE);
+            if ( $wp_hasher->CheckPassword( $password_plain, $password_hash )) {
+                $is_correct = true;
+            }
         }
 
-        echo "";
+        /*
+         * Depending on the credentials, we either show the system or the login
+         * form again with error message.
+         */
+        if ( $is_correct ) {
+            echo "You're logged in!";
+        } else {
+            echo $this->getLoginForm("Wrong email and/or password!");
+        }
 
         die();
     }
 
-    function _log( $message ) {
-        if( WP_DEBUG === true ){
+    public static function _log ( $message ) {
+        if ( WP_DEBUG === true ) {
             if( is_array( $message ) || is_object( $message ) ){
                 error_log( print_r( $message, true ) );
             } else {

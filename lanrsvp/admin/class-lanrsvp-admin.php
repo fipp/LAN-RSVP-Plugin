@@ -22,6 +22,16 @@
 class LanRsvpAdmin {
 
     /**
+     * Plugin version, used for cache-busting of style and script file references.
+     *
+     * @since   1.0.0
+     *
+     * @var     string
+     */
+    const VERSION = '1.0.0';
+
+
+    /**
      * Instance of this class.
      *
      * @since    1.0.0
@@ -65,8 +75,12 @@ class LanRsvpAdmin {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 
-        // Add the options page and menu item.
+        // Add the options page and menu item with submenus
         add_action( 'admin_menu', array( $this, 'add_plugin_admin_menu' ) );
+
+        // Add wordpress settings
+        add_action( 'admin_init', array( $this, 'register_settings' ) );
+
 
         // Add an action link pointing to the options page.
         $plugin_basename = plugin_basename( plugin_dir_path( realpath( dirname( __FILE__ ) ) ) . $this->plugin_slug . '.php' );
@@ -78,9 +92,8 @@ class LanRsvpAdmin {
          * Read more about actions and filters:
          * http://codex.wordpress.org/Plugin_API#Hooks.2C_Actions_and_Filters
          */
-        add_action( '@TODO', array( $this, 'action_method_name' ) );
-        add_filter( '@TODO', array( $this, 'filter_method_name' ) );
-
+        // add_action( '@TODO', array( $this, 'action_method_name' ) );
+        // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
     }
 
     /**
@@ -122,7 +135,15 @@ class LanRsvpAdmin {
 
         $screen = get_current_screen();
         if ( $this->plugin_screen_hook_suffix == $screen->id ) {
-            wp_enqueue_style( $this->plugin_slug .'-admin-styles', plugins_url( 'assets/css/admin.css', __FILE__ ), array(), LanRsvpAdmin::VERSION );
+            wp_enqueue_style(
+                $this->plugin_slug .'-admin-styles',
+                plugins_url( 'assets/css/lanrsvp-admin.css', __FILE__ ),
+                array(),
+                LanRsvpAdmin::VERSION
+            );
+
+            // enqueue the date picker css
+            wp_enqueue_style( 'jquery-ui-datepicker' );
         }
 
     }
@@ -142,7 +163,21 @@ class LanRsvpAdmin {
 
         $screen = get_current_screen();
         if ( $this->plugin_screen_hook_suffix == $screen->id ) {
-            wp_enqueue_script( $this->plugin_slug . '-admin-script', plugins_url( 'assets/js/admin.js', __FILE__ ), array( 'jquery' ), LanRsvpAdmin::VERSION );
+            wp_enqueue_script(
+                $this->plugin_slug . '-admin-script',
+                plugins_url( 'assets/js/lanrsvp-admin.js', __FILE__ ),
+                array( 'jquery' ),
+                LanRsvpAdmin::VERSION
+            );
+
+            // enqueue the date picker js
+            wp_enqueue_script(
+                'field-date-js',
+                'Field_Date.js',
+                array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker'),
+                time(),
+                true
+            );
         }
 
     }
@@ -155,27 +190,40 @@ class LanRsvpAdmin {
     public function add_plugin_admin_menu() {
 
         /*
-         * Add a settings page for this plugin to the Settings menu.
+         * Add a top level menu page for this plugin.
          *
          * NOTE:  Alternative menu locations are available via WordPress administration menu functions.
          *
          *        Administration Menus: http://codex.wordpress.org/Administration_Menus
          *
-         * @TODO:
-         *
-         * - Change 'Page Title' to the title of your plugin admin page
-         * - Change 'Menu Text' to the text for menu item for the plugin settings page
          * - Change 'manage_options' to the capability you see fit
          *   For reference: http://codex.wordpress.org/Roles_and_Capabilities
          */
-        $this->plugin_screen_hook_suffix = add_options_page(
-            __( 'Page Title', $this->plugin_slug ),
-            __( 'Menu Text', $this->plugin_slug ),
-            'manage_options',
-            $this->plugin_slug,
-            array( $this, 'display_plugin_admin_page' )
+        $this->plugin_screen_hook_suffix = add_menu_page(
+            __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The title to be displayed in the browser window for this page.
+            __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The text to be displayed for this menu item
+            'manage_options',                               // Which type of users can see this menu item
+            $this->plugin_slug,                             // The unique ID - that is, the slug - for this menu item
+            array( $this, 'display_plugin_admin_page' )     // The name of the function to call when rendering this menu's page
         );
 
+        add_submenu_page(
+            $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
+            __( 'LAN RSVP Plugin - Settings', $this->plugin_slug ), // The value used to populate the browser's title bar when the menu page is active
+            __( 'Settings', $this->plugin_slug ),                   // The label of this submenu item displayed in the menu
+            'manage_options',                                       // What roles are able to access this submenu item
+            $this->plugin_slug . '_settings',                       // The ID used to represent this submenu item
+            array( $this, 'display_plugin_settings_page' )
+        );
+    }
+
+    /**
+     * Render the overview page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_admin_page() {
+        include_once( 'views/overview.php' );
     }
 
     /**
@@ -183,8 +231,38 @@ class LanRsvpAdmin {
      *
      * @since    1.0.0
      */
-    public function display_plugin_admin_page() {
-        include_once( 'views/admin.php' );
+    public function display_plugin_settings_page() {
+        include_once( 'views/settings.php' );
+    }
+
+    public function register_settings() {
+
+        register_setting( $this->plugin_slug . '_settings', 'logip' );
+
+        /*
+        add_settings_section(
+            $this->plugin_slug . '_settings_section',       // ID used to identify this section and with which to register options
+            __( 'Logging Settings', $this->plugin_slug ),   // Title to be displayed on the administration page
+            '',
+            $this->plugin_slug . '_settings'                // Page on which to add this section of options
+        );
+
+        add_settings_field(
+            $this->plugin_slug . '_checkbox_logip',     // ID used to identify the field throughout the plug-in
+            __( 'Log IPs', $this->plugin_slug ),        // The label to the left of the option interface
+            array( $this, 'settings_checkbox_element' ),   // The function responsible for rendering the option interface
+            $this->plugin_slug . '_settings' ,          // The page on which this option will be displayed
+            $this->plugin_slug . '_settings_section',   // The name of the section to which this field belongs
+            array(
+                'type' => 'checkbox'
+            )
+        );
+
+        register_setting(
+            $this->plugin_slug . '_settings',
+            $this->plugin_slug . '_settings'
+        );
+        */
     }
 
     /**
@@ -227,5 +305,63 @@ class LanRsvpAdmin {
      */
     public function filter_method_name() {
         // @TODO: Define your filter hook callback here
+    }
+
+    public static function getEventsTable() {
+        $html = '<table>';
+        $html .= sprintf(
+            "<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>",
+            'Event ID',
+            'Title',
+            'From date',
+            'To date'
+        );
+
+        $events = DB::get_events();
+        if (isset( $events )) {
+            foreach ($events as $event) {
+                $html .= sprintf(
+                    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+                    $event->{'event_id'},
+                    $event->{'event_title'},
+                    $event->{'from_date'},
+                    $event->{'to_date'}
+                );
+            }
+        } else {
+            $html .= '<tr><td colspan="4">No events found.</td></tr>';
+        }
+
+        $html .= '</table>';
+
+        return $html;
+    }
+
+    public static function getUsersTable() {
+        $html = '<table>';
+        $html .= sprintf(
+            "<tr><th>%s</th><th>%s</th><th>%s</th></tr>",
+            'User ID',
+            'Email',
+            'Full name'
+        );
+
+        $users = DB::get_users();
+        if (isset( $users )) {
+            foreach ($users as $user) {
+                $html .= sprintf(
+                    "<tr><td>%s</td><td>%s</td><td>%s</td></tr>",
+                    $user->{'user_id'},
+                    $user->{'email'},
+                    $user->{'full_name'}
+                );
+            }
+        } else {
+            $html .= '<tr><td colspan="4">No users found.</td></tr>';
+        }
+
+        $html .= '</table>';
+
+        return $html;
     }
 }
