@@ -33,10 +33,10 @@ class DB {
         $event_sql = sprintf ("CREATE TABLE %s (
                 event_id MEDIUMINT NOT NULL AUTO_INCREMENT,
                 event_title VARCHAR(64) NOT NULL,
-                from_date DATETIME NOT NULL,
-                to_date DATETIME NOT NULL,
-                min_seats SMALLINT DEFAULT 0 NOT NULL,
-                max_seats SMALLINT DEFAULT 0 NOT NULL,
+                start_date DATETIME NOT NULL,
+                end_date DATETIME DEFAULT NULL,
+                min_attendees SMALLINT DEFAULT 0 NOT NULL,
+                max_attendees SMALLINT DEFAULT 0 NOT NULL,
                 PRIMARY KEY  (event_id)
             );",
             $wpdb->prefix . self::EVENT_TABLE_NAME
@@ -78,7 +78,7 @@ class DB {
         dbDelta ( $attendee_sql );
 
         if (self::DEBUG) {
-            self::populate_sample_data();
+            // self::populate_sample_data();
         }
     }
 
@@ -215,7 +215,7 @@ class DB {
         // Insert events
         $wpdb->query(
             sprintf(
-                "INSERT INTO %s (event_title, from_date, to_date) VALUES('Meldal-LAN 2014', '2014-06-06 18:00:00', '2014-06-08 18:00:00');",
+                "INSERT INTO %s (event_title, start_date, end_date) VALUES('Meldal-LAN 2014', '2014-06-06 18:00:00', '2014-06-08 18:00:00');",
                 $wpdb->prefix . self::EVENT_TABLE_NAME
             )
         );
@@ -255,6 +255,81 @@ class DB {
                     )
                 );
             }
+        }
+    }
+
+    /**
+     * @param $event
+     */
+    public static function createEvent($event) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $has_seatmap = isset ($event['seatmap']);
+
+        $wpdb->query('START TRANSACTION');
+
+        try {
+
+            $data = array(
+                'event_title' => $event['title'],
+                'start_date' => $event['start_date'],
+            );
+            $format = array('%s', '%s');
+            if ( isset ( $event['end_date'] ) ) {
+                $data['end_date'] = $event['end_date'];
+                array_push($format, '%s');
+            }
+
+            if ( isset ($event['min_attendees'])) {
+                $data['min_attendees'] = intval($event['min_attendees']);
+                array_push($format, '%d');
+            }
+
+            if ( isset ($event['max_attendees'])) {
+                $data['max_attendees'] = intval($event['max_attendees']);
+                array_push($format, '%d');
+            }
+
+            $wpdb->insert(
+                $wpdb->prefix . self::EVENT_TABLE_NAME,
+                $data,
+                $format
+            );
+
+            $event_id = $wpdb->insert_id;
+            if (is_int($event_id)) {
+
+                if ($has_seatmap) {
+                    foreach ($event['seatmap'] as $row => $cols) {
+                        if (is_array($cols)) {
+                            foreach ($cols as $col => $cell) {
+                                if (is_array($cell)) {
+                                    $status = $cell['status'];
+                                    $wpdb->insert(
+                                        $wpdb->prefix . self::SEAT_TABLE_NAME,
+                                        array(
+                                            'event_id' => $event_id,
+                                            'seat_row' => $row,
+                                            'seat_column' => $col,
+                                            'start_status' => $status
+                                        ),
+                                        array('%d', '%d', '%d', '%s')
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                $wpdb->query('ROLLBACK');
+                return "There was an error creating the event. Contact plugin author.";
+            }
+            $wpdb->query('COMMIT');
+            return $event_id;
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            return "SQL error: $e";
         }
     }
 } 

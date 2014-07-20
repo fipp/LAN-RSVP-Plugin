@@ -41,11 +41,11 @@ class LanRsvpAdmin {
     protected static $instance = null;
 
     /**
-     * Slug of the plugin screen.
+     * Slugs of the plugin screens.
      *
      * @since    1.0.0
      *
-     * @var      string
+     * @var      array
      */
     protected $plugin_screen_hook_suffix = null;
 
@@ -56,7 +56,6 @@ class LanRsvpAdmin {
      * @since     1.0.0
      */
     private function __construct() {
-
         /*
          * - Uncomment following lines if the admin class should only be available for super admins
          */
@@ -82,6 +81,7 @@ class LanRsvpAdmin {
         add_action( 'admin_init', array( $this, 'register_settings' ) );
 
 
+
         // Add an action link pointing to the options page.
         $plugin_basename = plugin_basename( plugin_dir_path( realpath( dirname( __FILE__ ) ) ) . $this->plugin_slug . '.php' );
         add_filter( 'plugin_action_links_' . $plugin_basename, array( $this, 'add_action_links' ) );
@@ -94,6 +94,9 @@ class LanRsvpAdmin {
          */
         // add_action( '@TODO', array( $this, 'action_method_name' ) );
         // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
+        // Add AJAX handler for event registration
+        add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
+
     }
 
     /**
@@ -134,7 +137,15 @@ class LanRsvpAdmin {
         }
 
         $screen = get_current_screen();
-        if ( $this->plugin_screen_hook_suffix == $screen->id ) {
+        if ( isset($this->plugin_screen_hook_suffix[$screen->id]) ) {
+
+            wp_enqueue_style(
+                $this->plugin_slug .'-common-styles',
+                plugins_url( '../assets/css/lanrsvp.css', __FILE__ ),
+                array(),
+                LanRsvpAdmin::VERSION
+            );
+
             wp_enqueue_style(
                 $this->plugin_slug .'-admin-styles',
                 plugins_url( 'assets/css/lanrsvp-admin.css', __FILE__ ),
@@ -142,8 +153,6 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
-            // enqueue the date picker css
-            wp_enqueue_style( 'jquery-ui-datepicker' );
         }
 
     }
@@ -162,7 +171,8 @@ class LanRsvpAdmin {
         }
 
         $screen = get_current_screen();
-        if ( $this->plugin_screen_hook_suffix == $screen->id ) {
+        if ( isset($this->plugin_screen_hook_suffix[$screen->id]) ) {
+
             wp_enqueue_script(
                 $this->plugin_slug . '-admin-script',
                 plugins_url( 'assets/js/lanrsvp-admin.js', __FILE__ ),
@@ -170,13 +180,11 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
-            // enqueue the date picker js
             wp_enqueue_script(
-                'field-date-js',
-                'Field_Date.js',
-                array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker'),
-                time(),
-                true
+                $this->plugin_slug . '-seatmap-script',
+                plugins_url( 'assets/js/lanrsvp-seatmap.js', __FILE__ ),
+                array( 'jquery' ),
+                LanRsvpAdmin::VERSION
             );
         }
 
@@ -190,24 +198,23 @@ class LanRsvpAdmin {
     public function add_plugin_admin_menu() {
 
         /*
-         * Add a top level menu page for this plugin.
-         *
-         * NOTE:  Alternative menu locations are available via WordPress administration menu functions.
-         *
-         *        Administration Menus: http://codex.wordpress.org/Administration_Menus
-         *
+         * Administration Menus: http://codex.wordpress.org/Administration_Menus
          * - Change 'manage_options' to the capability you see fit
          *   For reference: http://codex.wordpress.org/Roles_and_Capabilities
          */
-        $this->plugin_screen_hook_suffix = add_menu_page(
+
+        // Main menu
+        $hookname = add_menu_page(
             __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The title to be displayed in the browser window for this page.
             __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The text to be displayed for this menu item
             'manage_options',                               // Which type of users can see this menu item
             $this->plugin_slug,                             // The unique ID - that is, the slug - for this menu item
             array( $this, 'display_plugin_admin_page' )     // The name of the function to call when rendering this menu's page
         );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
 
-        add_submenu_page(
+        // Settings
+        $hookname = add_submenu_page(
             $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
             __( 'LAN RSVP Plugin - Settings', $this->plugin_slug ), // The value used to populate the browser's title bar when the menu page is active
             __( 'Settings', $this->plugin_slug ),                   // The label of this submenu item displayed in the menu
@@ -215,6 +222,19 @@ class LanRsvpAdmin {
             $this->plugin_slug . '_settings',                       // The ID used to represent this submenu item
             array( $this, 'display_plugin_settings_page' )
         );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
+
+        // Handle event
+        $hookname = add_submenu_page(
+            $this->plugin_slug,
+            __( 'LAN RSVP Plugin - Create Event', $this->plugin_slug ),
+            __( 'Create Event', $this->plugin_slug ),
+            'manage_options',
+            $this->plugin_slug . '_event',
+            array( $this, 'display_plugin_create_event_page' )
+        );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
+
     }
 
     /**
@@ -234,6 +254,17 @@ class LanRsvpAdmin {
     public function display_plugin_settings_page() {
         include_once( 'views/settings.php' );
     }
+
+    /**
+     * Render the settings page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_create_event_page() {
+        include_once( 'views/create-event.php' );
+    }
+
+
 
     public function register_settings() {
 
@@ -263,6 +294,61 @@ class LanRsvpAdmin {
             $this->plugin_slug . '_settings'
         );
         */
+    }
+
+    public function create_event() {
+
+        // Validate that the expected GET or POST parameters are set
+        if ( !isset($_REQUEST['title'], $_REQUEST['start_date'], $_REQUEST['end_date']) &&
+            (isset($_REQUEST['seatmap']) || isset($_REQUEST['min_attendees']) || isset($_REQUEST['max_attendees']))) {
+            echo "Not sufficient data sent in. Contact plugin author for fix.";
+            die();
+        }
+
+        $event = array(
+            'title' => $_REQUEST['title'],
+            'start_date' => $_REQUEST['start_date'],
+            'end_date' => $_REQUEST['end_date'],
+            'seatmap' => isset($_REQUEST['seatmap']) ? $_REQUEST['seatmap'] : '',
+            'min_attendees' => isset($_REQUEST['min_attendees']) ? isset($_REQUEST['min_attendees']) : '',
+            'max_attendees' => isset($_REQUEST['max_attendees']) ? isset($_REQUEST['max_attendees']) : ''
+        );
+
+        // Validate title
+        if (strlen($event['title']) < 2 && strlen($event['title']) > 64) {
+            echo "Title is either under 2 characters, or over 64.";
+            die();
+        }
+
+        // Validate start date
+        if (DateTime::createFromFormat('Y-m-d H:i:s', $event['start_date']) == false) {
+            echo "Start date is not valid.";
+            die();
+        }
+
+        // Validate end date
+        if (strlen($event['end_date']) != 0) {
+            if (DateTime::createFromFormat('Y-m-d H:i:s', $event['end_date']) == false) {
+                echo "End date is defined, but not valid.";
+                die();
+            }
+        } else {
+            unset($event['end_date']);
+        }
+
+        if ( !is_array($event['seatmap']) && !is_numeric($event['min_attendees']) &&
+            !is_numeric($event['max_attendees'])) {
+            echo "Neither a seat map, or a setting for number of attendees could be found. Contact plugin author.";
+            die();
+        } elseif (is_array($event['seatmap'])) {
+            unset($event['min_attendees']);
+            unset($event['max_attendees']);
+        } else {
+            unset($event['seatmap']);
+        }
+
+        echo DB::createEvent($event);
+        die();
     }
 
     /**

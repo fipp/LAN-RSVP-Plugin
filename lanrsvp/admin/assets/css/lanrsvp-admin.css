@@ -1,1 +1,3 @@
-/* This stylesheet is used to style the admin option form of the plugin. */
+div#lanrsvp-limits {
+    display: none;
+}
