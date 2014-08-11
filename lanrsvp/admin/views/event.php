@@ -1,15 +1,46 @@
 <?php
 
-$event_title = isset($_REQUEST['lanrsvp-event-title']) ? $_REQUEST['lanrsvp-event-title'] : '';
-$start_date = isset($_REQUEST['lanrsvp-event-startdate']) ? $_REQUEST['lanrsvp-event-startdate'] : '';
-$end_date = isset($_REQUEST['lanrsvp-event-enddate']) ? $_REQUEST['lanrsvp-event-enddate'] : '';
-$seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
+$data;
+$has_seatmap = true;
+if ( isset ( $_REQUEST['event_id'] ) ) {
+    $event_id = $_REQUEST['event_id'];
+    $event = DB::get_event( $event_id );
+    if ( isset($event[0]) && is_object($event[0])) {
+        $data = get_object_vars($event[0]);
+        if (isset($data['has_seatmap']) && !$data['has_seatmap']) {
+            $has_seatmap = false;
+        }
+    }
+}
 
 ?>
 
-<h1>Create new event</h1>
+<?php
+
+if (isset($data['event_id'])) {
+    echo "<h1>Update event</h1>";
+} else {
+    echo "<h1>Create new event</h1>";
+}
+?>
+
 <form method="post" class="lanrsvp-event-form">
     <table class="form-table">
+        <?php if (isset($data['event_id'])): ?>
+        <tr>
+            <th scope="row"><label for="lanrsvp-event-title">Event ID</label></th>
+            <td>
+                <input
+                    name="lanrsvp-event-title"
+                    type="text"
+                    required
+                    class="regular-text code"
+                    value="<?php echo $data['event_id'];  ?>"
+                    disabled
+                    />
+            </td>
+        </tr>
+        <?php endif ?>
         <tr>
             <th scope="row"><label for="lanrsvp-event-title">Event Title</label></th>
             <td>
@@ -20,7 +51,7 @@ $seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
                     required
                     placeholder="Between 2 and 64 characters ..."
                     class="regular-text code"
-                    value="<?php echo $event_title; ?>"
+                    value="<?php echo (isset($data['event_title']) ? $data['event_title'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -34,7 +65,7 @@ $seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
                     required
                     placeholder="Example: '2014-08-10 18:30:00'"
                     class="regular-text code"
-                    value="<?php echo $start_date; ?>"
+                    value="<?php echo (isset($data['start_date']) ? $data['start_date'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -47,7 +78,7 @@ $seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
                     pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:"
                     placeholder="Optional ..."
                     class="regular-text code"
-                    value="<?php echo $end_date; ?>"
+                    value="<?php echo (isset($data['end_date']) ? $data['end_date'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -56,40 +87,57 @@ $seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
             <td>
                 <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
                     <label title="seatmap">
-                        <input type="radio" name="lanrsvp-event-type" value="seatmap" checked />
+                        <input
+                            type="radio"
+                            name="lanrsvp-event-type"
+                            value="seatmap"
+                            <?php echo $has_seatmap ? 'checked' : ''; ?>
+                            />
                         <span>With seat map</span>
                     </label> <br />
                     <label title="general">
-                        <input type="radio" name="lanrsvp-event-type" value="general" />
+                        <input
+                            type="radio"
+                            name="lanrsvp-event-type"
+                            value="general"
+                            <?php echo !$has_seatmap ? 'checked' : ''; ?>
+                            />
                         <span>Without seat map</span>
                     </label>
                 </fieldset>
             </td>
         </tr>
+        <tr>
+            <th scope="row"><label for="attendees-min-number">Minimum number of attendees</label></th>
+            <td>
+                <input
+                    type="number"
+                    name="lanrsvp-attendees-min-number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    placeholder="Optional"
+                    value="<?php echo (isset($data['min_attendees']) ? $data['min_attendees'] : 0)  ?>"
+                    />
+            </td>
+        </tr>
+        <tr id="lanrsvp-maxlimit" style="<?php echo $has_seatmap ? 'display:none;' : ''; ?>">
+            <th scope="row"><label for="attendees-max-number">Maximum number of attendees</label></th>
+            <td>
+                <input
+                    type="number"
+                    name="lanrsvp-attendees-max-number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    placeholder="Optional"
+                    value="<?php echo (isset($data['max_attendees']) ? $data['max_attendees'] : 0)  ?>"
+                    />
+            </td>
+        </tr>
     </table>
 
-    <div id="lanrsvp-limits">
-        <h2 class="title">Registration limits (Optional)</h2>
-        <p>Here you can set the minimum amount of attendees needed for the event, and/or the maximum number of attendees
-        supported by the event.</p>
-
-        <table class="form-table">
-            <tr>
-                <th scope="row"><label for="attendees-min-number">Minimum number of attendees</label></th>
-                <td>
-                    <input type="number" name="lanrsvp-attendees-min-number" min="0" max="100" step="1" value="0" />
-                </td>
-            </tr>
-            <tr>
-                <th scope="row"><label for="attendees-max-number">Maximum number of attendees</label></th>
-                <td>
-                    <input type="number" name="lanrsvp-attendees-max-number" min="0" max="100" step="1" value="0" />
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <div id="lanrsvp-seatmap-wrapper">
+    <div id="lanrsvp-seatmap-wrapper" style="<?php echo (!$has_seatmap ? 'display:none;' : ''); ?>">
         <h2 class="title">Create the seat map</h2>
         <p>
             The seatmap creation process makes use of HTML5 'number' and 'canvas' element. In case you're experiencing
@@ -138,6 +186,12 @@ $seat_map = isset($_REQUEST['lanrsvp-event-seatmap']) ? 'checked' : '';
     </div>
 
     <p class="submit">
-        <input type="submit" name="submit" id="submit" class="button button-primary" value="Create event">
+        <input
+            type="submit"
+            name="submit"
+            id="submit"
+            class="button button-primary"
+            value="<?php echo isset($data['event_id']) ? 'Update event' : 'Create event'; ?>"
+            />
     </p>
 </form>

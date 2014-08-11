@@ -31,6 +31,9 @@ if ( ! defined( 'WPINC' ) ) {
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-event.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-user.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-db.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/class-wp-list-table-copy.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/events-table.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/users-table.php' );
 require_once( ABSPATH . 'wp-includes/class-phpass.php');
 
 

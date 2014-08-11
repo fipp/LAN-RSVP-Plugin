@@ -315,31 +315,29 @@ class LanRsvp {
         }
     }
 
+    /*
+    $event = DB::get_event($event_id);
+    if (isset($title)) {
+        $html = sprintf(
+            "<h1>%s</h1>",
+            $event[0]->{'event_title'}
+        );
+    }
+    $html .= sprintf(
+        "<ul><li>From date: %s</li><li>To date: %s</li><li>Seats available: %s</li></ul>",
+        $event[0]->{'from_date'},
+        $event[0]->{'to_date'},
+        $event[0]->{'seats_available'} || 'Unlimited'
+    );
+    */
+
+
     function getAttendeesTable ( $event_id ) {
-        $title = DB::get_event($event_id);
         $attendees = DB::get_attendees($event_id);
 
-        $html = 'No-name event';
-        if (isset($title)) {
-            $html = sprintf(
-                "<h1>%s</h1>",
-                $title[0]->{'event_title'}
-            );
+        $html = '<table>';
+        if ( isset( $attendees ) && is_array( $attendees) && count ( $attendees ) > 0 ) {
 
-            /*
-            $html .= sprintf(
-                "<ul><li>From date: %s</li><li>To date: %s</li><li>Seats available: %s</li></ul>",
-                $title[0]->{'from_date'},
-                $title[0]->{'to_date'},
-                $title[0]->{'seats_available'} || 'Unlimited'
-            );
-            */
-
-        }
-
-        $html .= '<table>';
-
-        if ( isset( $attendees )) {
             $html .= '<tr>';
             foreach ($attendees[0] as $key => $attribute) {
                 $html .= "<th>$key</th>";

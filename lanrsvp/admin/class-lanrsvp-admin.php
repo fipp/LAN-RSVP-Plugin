@@ -80,8 +80,6 @@ class LanRsvpAdmin {
         // Add wordpress settings
         add_action( 'admin_init', array( $this, 'register_settings' ) );
 
-
-
         // Add an action link pointing to the options page.
         $plugin_basename = plugin_basename( plugin_dir_path( realpath( dirname( __FILE__ ) ) ) . $this->plugin_slug . '.php' );
         add_filter( 'plugin_action_links_' . $plugin_basename, array( $this, 'add_action_links' ) );
@@ -213,7 +211,19 @@ class LanRsvpAdmin {
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
 
+        // Events
+        $hookname = add_submenu_page(
+            $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
+            __( 'LAN RSVP Plugin - Events', $this->plugin_slug ),   // The value used to populate the browser's title bar when the menu page is active
+            __( 'Events', $this->plugin_slug ),                     // The label of this submenu item displayed in the menu
+            'manage_options',                                       // What roles are able to access this submenu item
+            $this->plugin_slug,                                     // The ID used to represent this submenu item
+            array( $this, 'display_plugin_events_page' )
+        );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
+
         // Settings
+        /*
         $hookname = add_submenu_page(
             $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
             __( 'LAN RSVP Plugin - Settings', $this->plugin_slug ), // The value used to populate the browser's title bar when the menu page is active
@@ -223,6 +233,7 @@ class LanRsvpAdmin {
             array( $this, 'display_plugin_settings_page' )
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
+        */
 
         // Handle event
         $hookname = add_submenu_page(
@@ -232,6 +243,17 @@ class LanRsvpAdmin {
             'manage_options',
             $this->plugin_slug . '_event',
             array( $this, 'display_plugin_create_event_page' )
+        );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
+
+        // Users
+        $hookname = add_submenu_page(
+            $this->plugin_slug,
+            __( 'LAN RSVP Plugin - Users', $this->plugin_slug ),
+            __( 'Users', $this->plugin_slug ),
+            'manage_options',
+            $this->plugin_slug . '_users',
+            array( $this, 'display_plugin_users_page' )
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
 
@@ -256,13 +278,32 @@ class LanRsvpAdmin {
     }
 
     /**
-     * Render the settings page for this plugin.
+     * Render the create event page for this plugin.
      *
      * @since    1.0.0
      */
     public function display_plugin_create_event_page() {
-        include_once( 'views/create-event.php' );
+        include_once('views/event.php');
     }
+
+    /**
+     * Render the list events page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_events_page() {
+        include_once('views/events.php');
+    }
+
+    /**
+     * Render the list users page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_users_page() {
+        include_once('views/users.php');
+    }
+
 
 
 
@@ -299,7 +340,7 @@ class LanRsvpAdmin {
     public function create_event() {
 
         // Validate that the expected GET or POST parameters are set
-        if ( !isset($_REQUEST['title'], $_REQUEST['start_date'], $_REQUEST['end_date']) &&
+        if ( !isset($_REQUEST['title'], $_REQUEST['start_date'], $_REQUEST['type']) &&
             (isset($_REQUEST['seatmap']) || isset($_REQUEST['min_attendees']) || isset($_REQUEST['max_attendees']))) {
             echo "Not sufficient data sent in. Contact plugin author for fix.";
             die();
@@ -308,7 +349,8 @@ class LanRsvpAdmin {
         $event = array(
             'title' => $_REQUEST['title'],
             'start_date' => $_REQUEST['start_date'],
-            'end_date' => $_REQUEST['end_date'],
+            'type' => $_REQUEST['start_date'],
+            'end_date' => isset($_REQUEST['end_date']) ? $_REQUEST['end_date'] : '',
             'seatmap' => isset($_REQUEST['seatmap']) ? $_REQUEST['seatmap'] : '',
             'min_attendees' => isset($_REQUEST['min_attendees']) ? isset($_REQUEST['min_attendees']) : '',
             'max_attendees' => isset($_REQUEST['max_attendees']) ? isset($_REQUEST['max_attendees']) : ''
@@ -323,6 +365,12 @@ class LanRsvpAdmin {
         // Validate start date
         if (DateTime::createFromFormat('Y-m-d H:i:s', $event['start_date']) == false) {
             echo "Start date is not valid.";
+            die();
+        }
+
+        // Validate type
+        if ($event['type'] != 'general' && $event['type'] == 'seatmap') {
+            echo "Type is neither 'general' nor 'seatmap'";
             die();
         }
 
@@ -391,63 +439,5 @@ class LanRsvpAdmin {
      */
     public function filter_method_name() {
         // @TODO: Define your filter hook callback here
-    }
-
-    public static function getEventsTable() {
-        $html = '<table>';
-        $html .= sprintf(
-            "<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>",
-            'Event ID',
-            'Title',
-            'From date',
-            'To date'
-        );
-
-        $events = DB::get_events();
-        if (isset( $events )) {
-            foreach ($events as $event) {
-                $html .= sprintf(
-                    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
-                    $event->{'event_id'},
-                    $event->{'event_title'},
-                    $event->{'from_date'},
-                    $event->{'to_date'}
-                );
-            }
-        } else {
-            $html .= '<tr><td colspan="4">No events found.</td></tr>';
-        }
-
-        $html .= '</table>';
-
-        return $html;
-    }
-
-    public static function getUsersTable() {
-        $html = '<table>';
-        $html .= sprintf(
-            "<tr><th>%s</th><th>%s</th><th>%s</th></tr>",
-            'User ID',
-            'Email',
-            'Full name'
-        );
-
-        $users = DB::get_users();
-        if (isset( $users )) {
-            foreach ($users as $user) {
-                $html .= sprintf(
-                    "<tr><td>%s</td><td>%s</td><td>%s</td></tr>",
-                    $user->{'user_id'},
-                    $user->{'email'},
-                    $user->{'full_name'}
-                );
-            }
-        } else {
-            $html .= '<tr><td colspan="4">No users found.</td></tr>';
-        }
-
-        $html .= '</table>';
-
-        return $html;
     }
 }

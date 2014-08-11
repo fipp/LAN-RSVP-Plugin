@@ -13,7 +13,7 @@
         $("input[name='lanrsvp-event-type']").change(function(){
             writeDebug("changed input[name='lanrsvp-event-type']");
             $('#lanrsvp-seatmap-wrapper').toggle();
-            $('#lanrsvp-limits').toggle();
+            $('#lanrsvp-maxlimit').toggle();
         });
 
         $("form.lanrsvp-event-form").submit(function(e) {
