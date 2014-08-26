@@ -11,12 +11,6 @@ class Events_Table extends WP_List_Table_Copy {
             'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
             'ajax'   => false // We won't support Ajax for this table
         ) );
-
-        $events = DB::get_events();
-        foreach ($events as $key => $val) {
-            $events[$key] = get_object_vars($val);
-        }
-        $this->events = $events;
     }
 
     /*
@@ -26,12 +20,17 @@ class Events_Table extends WP_List_Table_Copy {
      * Finally the method assigns the example data to the class' data representation variable items.
      */
     function prepare_items() {
+        $events = DB::get_events();
+        foreach ($events as $key => $val) {
+            $events[$key] = get_object_vars($val);
+        }
+
         $columns = $this->get_columns();
         $hidden = array();
         $sortable = $this->get_sortable_columns();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort( $this->events, array( &$this, 'usort_reorder' ) );
-        $this->items = $this->events;
+        usort( $events, array( &$this, 'usort_reorder' ) );
+        $this->items = $events;
     }
 
     /*
@@ -40,7 +39,7 @@ class Events_Table extends WP_List_Table_Copy {
      */
     function get_columns(){
         $columns = array(
-            'event_id'              => 'ID',
+            'event_id'              => 'ID / Change',
             'is_active'             => 'Active',
             'event_title'           => 'Event Title',
             'start_date'            => 'Start Date',
@@ -49,7 +48,6 @@ class Events_Table extends WP_List_Table_Copy {
             'min_attendees'         => 'Min. Attendees',
             'max_attendees'         => 'Max. Attendees',
             'has_seatmap'           => 'Seatmap',
-            'edit'                  => '',
         );
         return $columns;
     }
@@ -117,6 +115,17 @@ class Events_Table extends WP_List_Table_Copy {
     function column_default( $item, $column_name ) {
         switch( $column_name ) {
             case 'event_id':
+                $editBtn = sprintf(
+                    '<a href="?page=lanrsvp_event&event_id=%d"><i class="fa fa-pencil-square-o fa-lg"></i></a>',
+                    $item['event_id']
+                );
+
+                $removeBtn = sprintf(
+                    '<a href="&oo" id="%d" class="remove-event" style="color: red;"><i class="fa fa-times fa-lg"></i></a>',
+                    $item['event_id']
+                );
+
+                return $item[ $column_name ] . " / $editBtn $removeBtn";
             case 'event_title':
             case 'min_attendees':
             case 'attendees_registered':
@@ -135,8 +144,6 @@ class Events_Table extends WP_List_Table_Copy {
             case 'max_attendees':
                 $val = $item[ $column_name ];
                 return ( $val == 0 ) ? 'Unlimited' : $val;
-            case 'edit':
-                return sprintf('<a href="?page=lanrsvp_event&event_id=%d">Edit</a>', $item['event_id']);
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

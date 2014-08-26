@@ -16,6 +16,7 @@
             $('#lanrsvp-maxlimit').toggle();
         });
 
+        // Handling event form submit
         $("form.lanrsvp-event-form").submit(function(e) {
             e.preventDefault();
 
@@ -46,6 +47,15 @@
                 console.log(response);
             });
         });
+
+        // Handling event deletion
+        $(".remove-event").click(function(e) {
+            e.preventDefault();
+            confirm('Are you sure you want to delete this event? This action cannot be undone.');
+
+        });
+
+
 
     });
 }(jQuery));

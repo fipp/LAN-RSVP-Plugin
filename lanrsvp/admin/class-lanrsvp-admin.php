@@ -151,6 +151,13 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
+            wp_enqueue_style(
+                $this->plugin_slug .'-fontawesome',
+                '//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css',
+                array(),
+                LanRsvpAdmin::VERSION
+            );
+
         }
 
     }
@@ -235,9 +242,9 @@ class LanRsvpAdmin {
         $this->plugin_screen_hook_suffix[$hookname] = 0;
         */
 
-        // Handle event
+        // Create/Edit Event Page
         $hookname = add_submenu_page(
-            $this->plugin_slug,
+            null, // Parent slug == null so that it won't show up in the menu
             __( 'LAN RSVP Plugin - Create Event', $this->plugin_slug ),
             __( 'Create Event', $this->plugin_slug ),
             'manage_options',

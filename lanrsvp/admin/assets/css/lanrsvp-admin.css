@@ -1,12 +1,2 @@
-/*
-.wp-list-table .column-event_id { width: 3%; }
-.wp-list-table .column-active { width: 5%; }
-.wp-list-table .column-event_title { width: 29%; }
-.wp-list-table .column-start_date { width: 15%; }
-.wp-list-table .column-end_date { width: 15%; }
-.wp-list-table .column-attendees_registered { width: 7%; }
-.wp-list-table .column-min_attendees { width: 7%; }
-.wp-list-table .column-max_attendees { width: 7%; }
-.wp-list-table .column-has_seatmap { width: 7%; }
-.wp-list-table .column-edit { width: 5%; }
-*/
+.wp-list-table .column-start_date,
+.wp-list-table .column-end_date { width: 175px; }
