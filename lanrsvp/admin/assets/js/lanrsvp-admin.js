@@ -21,41 +21,44 @@
             e.preventDefault();
 
             var data = {
-                title : $('input[name="lanrsvp-event-title"]').val(),
-                start_date : $('input[name="lanrsvp-event-startdate"]').val(),
-                end_date: $('input[name="lanrsvp-event-enddate"]').val()
+                action: 'create_event'
             };
 
-            var type = $('input[name=lanrsvp-event-type]:checked', '.lanrsvp-event-form').val();
-            data['type'] = type;
-            if (type === 'seatmap') {
-                if (typeof(Storage) !== "undefined") {
-                    data['seatmap'] = JSON.parse(sessionStorage.getItem('seats'));
-                } else {
-                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
+            $('form.lanrsvp-event-form').find('input').each(function(){
+               data[$(this).attr('name')] = $(this).val();
+            });
+            data['lanrsvp-event-type'] = $('input[name=lanrsvp-event-type]:checked', '.lanrsvp-event-form').val();
+
+            if (typeof(Storage) !== "undefined") {
+                var val = sessionStorage.getItem('seats');
+                if (val !== null) {
+                    data['lanrsvp-event-seatmap'] = JSON.parse(val);
                 }
-            } else if (type === 'general') {
-                data['min_attendees'] = $('input[name="lanrsvp-attendees-min-number"]').val();
-                data['max_attendees'] = $('input[name="lanrsvp-attendees-max-number"]').val();
-            } else {
-                return;
             }
 
-            data['action'] = 'create_event';
-
             $.post( ajaxurl, data, function(response) {
-                console.log(response);
+                if (response.length > 0) {
+                    $('.lanrsvp-error').html(response);
+                } else {
+                     window.location.replace('?page=lanrsvp');
+                }
             });
         });
 
         // Handling event deletion
         $(".remove-event").click(function(e) {
             e.preventDefault();
-            confirm('Are you sure you want to delete this event? This action cannot be undone.');
-
+            var id = $(this).attr('id');
+            var ok = confirm('Are you sure you want to delete this event (' + id + ')? This action cannot be undone.');
+            if (ok) {
+                $.post( ajaxurl, { action: 'delete_event', event_id: id }, function(response) {
+                    if (response.length > 0) {
+                        alert(response);
+                    } else {
+                        window.location.replace('?page=lanrsvp');
+                    }
+                });
+            }
         });
-
-
-
     });
 }(jQuery));

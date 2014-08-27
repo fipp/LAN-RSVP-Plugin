@@ -6,7 +6,8 @@
  * Time: 15:26
  */
 
-class DB {
+class DB
+{
     const EVENT_TABLE_NAME = 'lanrsvp_event';
     const USER_TABLE_NAME = 'lanrsvp_user';
     const ATTENDEE_TABLE_NAME = 'lanrsvp_attendee';
@@ -14,12 +15,13 @@ class DB {
 
     const DEBUG = true;
 
-    public static function install () {
+    public static function install()
+    {
         /** @var $wpdb WPDB */
 
         global $wpdb;
 
-        $user_sql = sprintf ("CREATE TABLE %s (
+        $user_sql = sprintf("CREATE TABLE %s (
                 user_id MEDIUMINT NOT NULL AUTO_INCREMENT,
                 email VARCHAR(128) NOT NULL,
                 full_name VARCHAR(64) NOT NULL,
@@ -31,7 +33,7 @@ class DB {
             $wpdb->prefix . self::USER_TABLE_NAME
         );
 
-        $event_sql = sprintf ("CREATE TABLE %s (
+        $event_sql = sprintf("CREATE TABLE %s (
                 event_id MEDIUMINT NOT NULL AUTO_INCREMENT,
                 is_active TINYINT(1) NOT NULL,
                 event_title VARCHAR(64) NOT NULL,
@@ -45,51 +47,53 @@ class DB {
             $wpdb->prefix . self::EVENT_TABLE_NAME
         );
 
-        $seat_sql = sprintf ("CREATE TABLE %s (
-                event_id MEDIUMINT NOT NULL,
-                seat_row SMALLINT NOT NULL,
-                seat_column SMALLINT NOT NULL,
-                PRIMARY KEY  (event_id, seat_row, seat_column),
-                FOREIGN KEY (event_id) REFERENCES %s (event_id)
-            );",
-            $wpdb->prefix . self::SEAT_TABLE_NAME,
-            $wpdb->prefix . self::EVENT_TABLE_NAME
-        );
-
-        $attendee_sql = sprintf ("CREATE TABLE %s (
+        $attendee_sql = sprintf("CREATE TABLE %s (
                 event_id MEDIUMINT NOT NULL,
                 user_id MEDIUMINT NOT NULL,
-                seat_row SMALLINT,
-                seat_column SMALLINT,
                 registration_date TIMESTAMP DEFAULT NOW(),
                 PRIMARY KEY (event_id, user_id),
                 FOREIGN KEY (event_id) REFERENCES %s (event_id),
-                FOREIGN KEY (user_id) REFERENCES %s (user_id),
-                FOREIGN KEY (event_id, seat_row, seat_column) REFERENCES %s (event_id, seat_row, seat_column)
+                FOREIGN KEY (user_id) REFERENCES %s (user_id)
             );",
             $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
             $wpdb->prefix . self::EVENT_TABLE_NAME,
-            $wpdb->prefix . self::USER_TABLE_NAME,
-            $wpdb->prefix . self::SEAT_TABLE_NAME
+            $wpdb->prefix . self::USER_TABLE_NAME
         );
 
-        require_once ( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta ( $user_sql );
-        dbDelta ( $event_sql );
-        dbDelta ( $seat_sql );
-        dbDelta ( $attendee_sql );
+        $seat_sql = sprintf("CREATE TABLE %s (
+                event_id MEDIUMINT NOT NULL,
+                user_id MEDIUMINT,
+                seat_row SMALLINT NOT NULL,
+                seat_column SMALLINT NOT NULL,
+                PRIMARY KEY (event_id, seat_row, seat_column),
+                FOREIGN KEY (event_id) REFERENCES %s (event_id),
+                FOREIGN KEY (user_id) REFERENCES %s (user_id)
+
+            );",
+            $wpdb->prefix . self::SEAT_TABLE_NAME,
+            $wpdb->prefix . self::EVENT_TABLE_NAME,
+            $wpdb->prefix . self::ATTENDEE_TABLE_NAME
+        );
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($user_sql);
+        dbDelta($event_sql);
+        dbDelta($attendee_sql);
+        dbDelta($seat_sql);
     }
 
-    public static function uninstall() {
+    public static function uninstall()
+    {
         /** @var $wpdb WPDB */
         global $wpdb;
-        $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::ATTENDEE_TABLE_NAME));
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::SEAT_TABLE_NAME));
+        $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::ATTENDEE_TABLE_NAME));
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::EVENT_TABLE_NAME));
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::USER_TABLE_NAME));
     }
 
-    public static function get_attendees ($event_id) {
+    public static function get_attendees($event_id)
+    {
         if (!isset($event_id)) {
             return null;
         }
@@ -99,20 +103,25 @@ class DB {
 
         $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
         $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
             "SELECT
               a.user_id AS 'User ID',
               b.full_name AS 'Full name',
-              a.seat_row AS 'Row',
-              a.seat_column AS 'Column',
+              c.seat_row AS 'Row',
+              c.seat_column AS 'Column',
               a.registration_date AS 'Registration date'
-             FROM $attendee_table_name a JOIN $user_table_name b ON (a.user_id = b.user_id)
+             FROM
+              $attendee_table_name a
+              JOIN $user_table_name b ON (a.user_id = b.user_id)
+              JOIN $seat_table_name c ON (a.event_id = c.event_id AND a.user_id = c.user_id)
              WHERE event_id = %s",
             $event_id
         ));
     }
 
-    public static function get_event($event_id) {
+    public static function get_event($event_id)
+    {
         if (!isset($event_id)) {
             return null;
         }
@@ -127,17 +136,37 @@ class DB {
         ));
     }
 
+    public static function get_event_seatmap($event_id) {
+        if (!isset($event_id)) {
+            return null;
+        }
+
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $seat_table_name WHERE event_id = %s",
+            $event_id
+        ));
+    }
+
     public static function get_events() {
         /** @var $wpdb WPDB */
         global $wpdb;
 
         $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
         $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
-        return $wpdb->get_results(
-            "SELECT a.*,COUNT(*) AS 'attendees_registered'
-             FROM $event_table_name a JOIN $attendee_table_name b ON a.event_id = b.event_id
-             GROUP BY a.event_id;"
+
+        $res = $wpdb->get_results(
+            "SELECT
+              a.*,
+              (SELECT COUNT(*) FROM $attendee_table_name WHERE event_id = a.event_id) AS 'attendees_registered'
+            FROM
+              $event_table_name a;"
         );
+
+        return $res;
     }
 
     public static function get_users() {
@@ -148,7 +177,7 @@ class DB {
         return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name");
     }
 
-    public static function getPasswordHash ($user_id = null, $email = null) {
+    public static function get_password_hash($user_id = null, $email = null) {
         if (!isset($user_id) && !isset($email)) {
             return null;
         }
@@ -163,12 +192,12 @@ class DB {
         $sql = '';
         $table_name = $wpdb->prefix . self::USER_TABLE_NAME;
         if (isset($user_id)) {
-            $sql =  $wpdb->prepare(
+            $sql = $wpdb->prepare(
                 "SELECT password FROM $table_name WHERE user_id = %s",
                 $user_id
             );
         } elseif (isset($email)) {
-            $sql =  $wpdb->prepare(
+            $sql = $wpdb->prepare(
                 "SELECT password FROM $table_name WHERE email = %s",
                 $email
             );
@@ -177,35 +206,34 @@ class DB {
         return $wpdb->get_results($sql);
     }
 
-    /**
-     * @param $event
-     */
-    public static function createEvent($event) {
+    public static function create_event($event) {
         /** @var $wpdb WPDB */
         global $wpdb;
 
-        $type = isset ($event['type']);
+        $e = $event;
 
         $wpdb->query('START TRANSACTION');
 
-        try {
+        $error = '';
 
+        try {
+            $type = $e['lanrsvp-event-type'];
+
+            $format = array('%s', '%s', '%d', '%d');
             $data = array(
-                'event_title' => $event['title'],
-                'start_date' => $event['start_date'],
-                'type' => $event['type']
+                'event_title' => $e['lanrsvp-event-title'],
+                'start_date' => $e['lanrsvp-event-startdate'],
+                'has_seatmap' => ($type == 'seatmap' ? 1 : 0),
+                'min_attendees' => intval($e['lanrsvp-event-minattendees']),
             );
-            $format = array('%s', '%s', '%s');
 
             if ($type == 'general') {
-                $data['min_attendees'] = intval($event['min_attendees']);
-                $data['max_attendees'] = intval($event['max_attendees']);
                 array_push($format, '%d');
-                array_push($format, '%d');
+                $data['max_attendees'] = intval($e['lanrsvp-event-maxattendees']);
             }
 
-            if ( isset ( $event['end_date'] ) ) {
-                $data['end_date'] = $event['end_date'];
+            if (strlen($e['lanrsvp-event-enddate']) > 0) {
+                $data['end_date'] = $e['lanrsvp-event-enddate'];
                 array_push($format, '%s');
             }
 
@@ -218,7 +246,7 @@ class DB {
             $event_id = $wpdb->insert_id;
             if (is_int($event_id)) {
                 if ($type == 'seatmap') {
-                    foreach ($event['seatmap'] as $row => $cols) {
+                    foreach ($e['lanrsvp-event-seatmap'] as $row => $cols) {
                         if (is_array($cols)) {
                             foreach ($cols as $col => $cell) {
                                 if (is_array($cell)) {
@@ -228,8 +256,7 @@ class DB {
                                         array(
                                             'event_id' => $event_id,
                                             'seat_row' => $row,
-                                            'seat_column' => $col,
-                                            'start_status' => $status
+                                            'seat_column' => $col
                                         ),
                                         array('%d', '%d', '%d', '%s')
                                     );
@@ -240,13 +267,23 @@ class DB {
                 }
             } else {
                 $wpdb->query('ROLLBACK');
-                return "There was an error creating the event. Contact plugin author.";
+                return "The event could not be created. Contact plugin author.";
             }
             $wpdb->query('COMMIT');
-            return $event_id;
+            return ''; // success !
         } catch (Exception $e) {
             $wpdb->query('ROLLBACK');
-            return "SQL error: $e";
+            return "The event could not be created: $e. Contact plugin author.";
         }
     }
-} 
+
+    public static function delete_event($event_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+        if (isset($event_id) && is_numeric($event_id)) {
+            $wpdb->delete( $wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
+            $wpdb->delete( $wpdb->prefix . self::ATTENDEE_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
+            $wpdb->delete( $wpdb->prefix . self::EVENT_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
+        }
+    }
+}

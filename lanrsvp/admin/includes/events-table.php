@@ -88,6 +88,7 @@ class Events_Table extends WP_List_Table_Copy {
                 $timestamp_b = strtotime( $b[$orderby] );
                 $result = $timestamp_a - $timestamp_b;
                 break;
+            case 'event_id':
             case 'attendees_registered':
             case 'min_attendees':
             case 'max_attendees':

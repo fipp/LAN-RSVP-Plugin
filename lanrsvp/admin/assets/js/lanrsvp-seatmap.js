@@ -16,13 +16,34 @@
         var numberOfRows = 10; // Initial number of rows for the seat map
         var numberOfColumns = 10; // Initial columns of rows for the seat map
 
-        var seats = []; // Array holding the status for all seats
+        var seats = getExistingSeatmap(); // Array holding the status for all seats
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
         var currentRow = undefined; // Variable showing which row we are currently hovering
         var currentColumn = undefined; // Variable showing which column we are currently hovering
         var refreshingCells = false; // When refreshingCells === true, we cannot paint any new cells
 
         drawSeatmap(numberOfRows, numberOfColumns);
+
+        function getExistingSeatmap() {
+            var seats = [];
+            if (LanRsvpAdmin.seatmap !== undefined) {
+                for (var i = 0; i < LanRsvpAdmin.seatmap.length; i++) {
+                    var seat = LanRsvpAdmin.seatmap[i];
+                    if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
+                        var row = seat['seat_row'];
+                        var column = seat['seat_column'];
+                        if (seats[row] === undefined) {
+                            seats[row] = Array();
+                        }
+                        seats[row][column] = {
+                            'status': (seat['user_id'] === null ? 'free' : 'busy')
+                        };
+                    }
+                }
+            }
+            console.log(seats);
+            return seats;
+        }
 
         function drawSeatmap (rows, columns) {
             var gridWidth = columns * cellSize;

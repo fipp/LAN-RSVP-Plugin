@@ -94,6 +94,7 @@ class LanRsvpAdmin {
         // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
         // Add AJAX handler for event registration
         add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
+        add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
 
     }
 
@@ -191,6 +192,14 @@ class LanRsvpAdmin {
                 array( 'jquery' ),
                 LanRsvpAdmin::VERSION
             );
+
+            if (isset($_REQUEST['event_id'])) {
+                wp_localize_script(
+                    $this->plugin_slug . '-seatmap-script',
+                    'LanRsvpAdmin',
+                    array( seatmap => DB::get_event_seatmap($_REQUEST['event_id']) )
+                );
+            }
         }
 
     }
@@ -345,64 +354,12 @@ class LanRsvpAdmin {
     }
 
     public function create_event() {
+        echo DB::create_event($_REQUEST);
+        die();
+    }
 
-        // Validate that the expected GET or POST parameters are set
-        if ( !isset($_REQUEST['title'], $_REQUEST['start_date'], $_REQUEST['type']) &&
-            (isset($_REQUEST['seatmap']) || isset($_REQUEST['min_attendees']) || isset($_REQUEST['max_attendees']))) {
-            echo "Not sufficient data sent in. Contact plugin author for fix.";
-            die();
-        }
-
-        $event = array(
-            'title' => $_REQUEST['title'],
-            'start_date' => $_REQUEST['start_date'],
-            'type' => $_REQUEST['start_date'],
-            'end_date' => isset($_REQUEST['end_date']) ? $_REQUEST['end_date'] : '',
-            'seatmap' => isset($_REQUEST['seatmap']) ? $_REQUEST['seatmap'] : '',
-            'min_attendees' => isset($_REQUEST['min_attendees']) ? isset($_REQUEST['min_attendees']) : '',
-            'max_attendees' => isset($_REQUEST['max_attendees']) ? isset($_REQUEST['max_attendees']) : ''
-        );
-
-        // Validate title
-        if (strlen($event['title']) < 2 && strlen($event['title']) > 64) {
-            echo "Title is either under 2 characters, or over 64.";
-            die();
-        }
-
-        // Validate start date
-        if (DateTime::createFromFormat('Y-m-d H:i:s', $event['start_date']) == false) {
-            echo "Start date is not valid.";
-            die();
-        }
-
-        // Validate type
-        if ($event['type'] != 'general' && $event['type'] == 'seatmap') {
-            echo "Type is neither 'general' nor 'seatmap'";
-            die();
-        }
-
-        // Validate end date
-        if (strlen($event['end_date']) != 0) {
-            if (DateTime::createFromFormat('Y-m-d H:i:s', $event['end_date']) == false) {
-                echo "End date is defined, but not valid.";
-                die();
-            }
-        } else {
-            unset($event['end_date']);
-        }
-
-        if ( !is_array($event['seatmap']) && !is_numeric($event['min_attendees']) &&
-            !is_numeric($event['max_attendees'])) {
-            echo "Neither a seat map, or a setting for number of attendees could be found. Contact plugin author.";
-            die();
-        } elseif (is_array($event['seatmap'])) {
-            unset($event['min_attendees']);
-            unset($event['max_attendees']);
-        } else {
-            unset($event['seatmap']);
-        }
-
-        echo DB::createEvent($event);
+    public function delete_event() {
+        echo DB::delete_event($_REQUEST['event_id']);
         die();
     }
 

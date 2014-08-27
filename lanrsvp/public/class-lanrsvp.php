@@ -403,7 +403,7 @@ HTML;
         $is_correct = false;
 
         // get $password_hash for $email
-        $res = DB::getPasswordHash(null,$email);
+        $res = DB::get_password_hash(null,$email);
         if (isset( $res[0]->{'password'} )) {
             $password_hash = $res[0]->{'password'};
         }

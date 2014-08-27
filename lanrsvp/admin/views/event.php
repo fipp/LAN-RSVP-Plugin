@@ -7,7 +7,7 @@ if ( isset ( $_REQUEST['event_id'] ) ) {
     $event = DB::get_event( $event_id );
     if ( isset($event[0]) && is_object($event[0])) {
         $data = get_object_vars($event[0]);
-        if (isset($data['has_seatmap']) && !$data['has_seatmap']) {
+        if (isset($data['has_seatmap']) && $data['has_seatmap'] == 0) {
             $has_seatmap = false;
         }
     }
@@ -108,11 +108,11 @@ if (isset($data['event_id'])) {
             </td>
         </tr>
         <tr>
-            <th scope="row"><label for="attendees-min-number">Minimum number of attendees</label></th>
+            <th scope="row"><label for="lanrsvp-event-minattendees">Minimum number of attendees</label></th>
             <td>
                 <input
                     type="number"
-                    name="lanrsvp-attendees-min-number"
+                    name="lanrsvp-event-minattendees"
                     min="0"
                     max="100"
                     step="1"
@@ -122,11 +122,11 @@ if (isset($data['event_id'])) {
             </td>
         </tr>
         <tr id="lanrsvp-maxlimit" style="<?php echo $has_seatmap ? 'display:none;' : ''; ?>">
-            <th scope="row"><label for="attendees-max-number">Maximum number of attendees</label></th>
+            <th scope="row"><label for="lanrsvp-event-maxattendees">Maximum number of attendees</label></th>
             <td>
                 <input
                     type="number"
-                    name="lanrsvp-attendees-max-number"
+                    name="lanrsvp-event-maxattendees"
                     min="0"
                     max="100"
                     step="1"
@@ -185,6 +185,8 @@ if (isset($data['event_id'])) {
         <canvas id="lanrsvp-seatmap"></canvas>
     </div>
 
+    <div class="lanrsvp-error"></div>
+
     <p class="submit">
         <input
             type="submit"
@@ -194,4 +196,5 @@ if (isset($data['event_id'])) {
             value="<?php echo isset($data['event_id']) ? 'Update event' : 'Create event'; ?>"
             />
     </p>
+
 </form>
