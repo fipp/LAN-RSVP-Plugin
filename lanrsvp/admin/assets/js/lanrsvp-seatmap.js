@@ -13,23 +13,29 @@
         var context; // To be set by drawGrid()
         var cellSize = 30; // How many pixels * pixels each seat cell should be
 
-        var numberOfRows = 10; // Initial number of rows for the seat map
-        var numberOfColumns = 10; // Initial columns of rows for the seat map
+        var seats = getStoredSeatmap(); // Array holding the status for all seats
+        var mapSize = getGridSize(seats);
+        var numberOfRows = mapSize[0]; // Initial number of rows for the seat map
+        var numberOfColumns = mapSize[1]; // Initial columns of rows for the seat map
 
-        var seats = getExistingSeatmap(); // Array holding the status for all seats
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
         var currentRow = undefined; // Variable showing which row we are currently hovering
         var currentColumn = undefined; // Variable showing which column we are currently hovering
         var refreshingCells = false; // When refreshingCells === true, we cannot paint any new cells
 
-        drawSeatmap(numberOfRows, numberOfColumns);
+        drawGrid(numberOfRows, numberOfColumns);
+        if (seats.length > 0) {
+            drawSeats();
+        }
 
-        function getExistingSeatmap() {
+        function getStoredSeatmap() {
             var seats = [];
-            if (LanRsvpAdmin.seatmap !== undefined) {
+            var count = 0;
+            if (LanRsvpAdmin !== null && LanRsvpAdmin.seatmap !== null) {
                 for (var i = 0; i < LanRsvpAdmin.seatmap.length; i++) {
                     var seat = LanRsvpAdmin.seatmap[i];
                     if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
+                        count++;
                         var row = seat['seat_row'];
                         var column = seat['seat_column'];
                         if (seats[row] === undefined) {
@@ -41,11 +47,26 @@
                     }
                 }
             }
-            console.log(seats);
+            writeDebug(count + ' existing seats loaded')
             return seats;
         }
 
-        function drawSeatmap (rows, columns) {
+        function getGridSize(seats) {
+            var maxRow = 9;
+            var maxCol = 9;
+            if (seats.length > 0) {
+                maxRow = seats.length;
+                maxCol = 0;
+                for (var i = 0; i < seats.length; i++) {
+                    if (seats[i] !== undefined && seats[i].length > maxCol) {
+                        maxCol = seats[i].length;
+                    }
+                }
+            }
+            return [maxRow + 1, maxCol + 1];
+        }
+
+        function drawGrid (rows, columns) {
             var gridWidth = columns * cellSize;
             var gridHeight = rows * cellSize;
 
@@ -83,7 +104,9 @@
 
             context.strokeStyle = "black";
             context.stroke();
+        }
 
+        function drawSeats() {
             /*
             If we have resized the seat map with seats already assigned, paint the seats painted prior
             to the map being resized.
@@ -96,10 +119,10 @@
                             if (seats[i][j]['status'] !== 'noset') {
                                 switch (seats[i][j]['status']) {
                                     case 'free':
-                                        context.fillStyle="#9c1616";
+                                        context.fillStyle="#138e10";
                                         break;
                                     case 'busy':
-                                        context.fillStyle="#138e10";
+                                        context.fillStyle="#9c1616";
                                         break;
                                     default:
                                         break;
@@ -250,7 +273,7 @@
             numberOfColumns = $('input[name="lanrsvp-seatmap-cols"]').val();
             clearTimeout(drawTimeout);
             drawTimeout = setTimeout(function() {
-                drawSeatmap(numberOfRows, numberOfColumns);
+                drawGrid(numberOfRows, numberOfColumns);
             }, 250);
         }
 

@@ -193,13 +193,15 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
+            $data['seatmap'] = null;
             if (isset($_REQUEST['event_id'])) {
-                wp_localize_script(
-                    $this->plugin_slug . '-seatmap-script',
-                    'LanRsvpAdmin',
-                    array( seatmap => DB::get_event_seatmap($_REQUEST['event_id']) )
-                );
+                $data['seatmap'] = DB::get_event_seatmap($_REQUEST['event_id']);
             }
+            wp_localize_script(
+                $this->plugin_slug . '-seatmap-script',
+                'LanRsvpAdmin',
+                $data
+            );
         }
 
     }
