@@ -41,13 +41,17 @@
                         if (seats[row] === undefined) {
                             seats[row] = Array();
                         }
-                        seats[row][column] = {
-                            'status': (seat['user_id'] === null ? 'free' : 'busy')
-                        };
+                        seats[row][column] = Object();
+                        if (seat['user_id'] === null) {
+                            seats[row][column]['status'] = 'free';
+                        } else {
+                            seats[row][column]['status'] = 'busy';
+                            seats[row][column]['user_id'] = seat['user_id'];
+                        }
                     }
                 }
             }
-            writeDebug(count + ' existing seats loaded')
+            writeDebug(count + ' existing seats loaded');
             return seats;
         }
 
@@ -112,28 +116,11 @@
             to the map being resized.
             */
             refreshingCells = true;
-            for (var i = 0; i < seats.length; i++) {
-                if (seats[i] !== undefined) {
-                    for (var j = 0; j < seats[i].length; j++) {
-                        if (seats[i][j] !== undefined) {
-                            if (seats[i][j]['status'] !== 'noset') {
-                                switch (seats[i][j]['status']) {
-                                    case 'free':
-                                        context.fillStyle="#138e10";
-                                        break;
-                                    case 'busy':
-                                        context.fillStyle="#9c1616";
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                context.fillRect(
-                                    j * cellSize + 1,
-                                    i * cellSize + 1,
-                                    cellSize - 1,
-                                    cellSize - 1
-                                );
-                            }
+            for (var row = 0; row < seats.length; row++) {
+                if (seats[row] !== undefined) {
+                    for (var col = 0; col < seats[row].length; col++) {
+                        if (seats[row][col] !== undefined) {
+                            paintSeat(row,col);
                         }
                     }
                 }
@@ -143,7 +130,6 @@
 
         function mouseMoveListener(evt) {
             var mousePos = getMousePos(canvas, evt);
-
             var column = Math.floor( (mousePos.x - 1) / cellSize);
             var row = Math.floor( (mousePos.y - 1) / cellSize);
 
@@ -151,16 +137,27 @@
                 if (column !== currentColumn || row !== currentRow) {
                     currentRow = row;
                     currentColumn = column;
-                    //writeDebug('hover: row ' + row + ', column ' + column);
 
-                    paintCell(currentRow, currentColumn);
+                    //writeDebug('hover: row ' + row + ', column ' + column);
+                    setSeatStatus(currentRow,currentColumn);
+
+                    if (mouseIsDown && !refreshingCells) {
+                        if (toggleSeatStatus(currentRow, currentColumn)) {
+                            paintSeat(currentRow, currentColumn);
+                        }
+
+                    }
                 }
             }
         }
 
         function mouseDownListener() {
             mouseIsDown = true;
-            paintCell(currentRow, currentColumn);
+            if (!refreshingCells) {
+                if (toggleSeatStatus(currentRow, currentColumn)) {
+                    paintSeat(currentRow, currentColumn);
+                }
+            }
         }
 
         function mouseUpListener() {
@@ -175,11 +172,11 @@
 
             var start = new Date().getMilliseconds();
             refreshingCells = true;
-            for (var i = 0; i < seats.length; i++) {
-                if (seats[i] !== undefined) {
-                    for (var j = 0; j < seats[i].length; j++) {
-                        if (seats[i][j] !== undefined) {
-                            seats[i][j]['set'] = 0;
+            for (var row = 0; row < seats.length; row++) {
+                if (seats[row] !== undefined) {
+                    for (var col = 0; col < seats[row].length; col++) {
+                        if (seats[row][col] !== undefined) {
+                            seats[row][col]['donottoggle'] = 0;
                         }
                     }
                 }
@@ -199,66 +196,119 @@
             };
         }
 
-        function paintCell (row, column) {
-            if (mouseIsDown && !refreshingCells) {
-                if (seats[row] === undefined) {
-                    seats[row] = Array();
-                }
+        function toggleSeatStatus (row, column) {
 
-                if (seats[row][column] === undefined) {
-                    seats[row][column] = new Object({
-                        status : 'notset'
-                    });
-                } else {
-                    if (seats[row][column]['set'] === 1) {
-                        // If we already have painted this cell during this
-                        // mousedown, we don't paint it again.
-                        return;
-                    }
-                }
+            // Initialize row if needed
+            if (seats[row] === undefined) {
+                seats[row] = Array();
+            }
 
-                if (seats[row][column]['status'] === 'notset') {
-                    // Not initialized, set to 'free' and paint cell green
+            // Initialize column if needed
+            if (seats[row][column] === undefined) {
+                seats[row][column] = Object();
+            }
+
+            if (seats[row][column]['donottoggle'] === 1) {
+                // If we already have painted this cell during this
+                // mousedown, we don't paint it again.
+                return false;
+            }
+
+            var hasToggled = false;
+
+            // Change status (undefined => 'free', 'free' => undefined)
+            switch (seats[row][column]['status']) {
+                case undefined:
+                    hasToggled = true;
                     seats[row][column]['status'] = 'free';
-                    context.fillStyle="#138e10";
-                } else if (seats[row][column]['status'] === 'free') {
-                    // free, now set to 'busy' and paint cell red
-                    seats[row][column]['status'] = 'busy';
-                    context.fillStyle="#9c1616";
-                } else if (seats[row][column]['status'] === 'busy') {
-                    // busy, now set to undefined and paint cell white (remove color)
-                    seats[row][column]['status'] = 'notset';
+                    break;
+                case 'free':
+                    hasToggled = true;
+                    seats[row][column]['status'] = undefined;
+                    break;
+                default:
+                    break;
+            }
+
+            // Variable to make sure we don't paint this cell again during this
+            // "paint session". Reset every time mouseUpListener is called
+            seats[row][column]['donottoggle'] = 1;
+
+            return hasToggled;
+        }
+
+        var storeTimeout;
+        function paintSeat (row, column) {
+            clearTimeout(storeTimeout);
+
+            switch (seats[row][column]['status']) {
+                case undefined:
                     context.clearRect(
                         column * cellSize + 1,
                         row * cellSize + 1,
                         cellSize - 1,
                         cellSize - 1
                     );
-                }
-
-                // Store 'seats' to sessionStorage if the browser supports it.
-                if (typeof(Storage) !== "undefined") {
-                    sessionStorage.setItem('seats', JSON.stringify(seats));
-                } else {
-                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
-                }
-
-                // Variable to make sure we don't paint this cell again during this
-                // "paint session". Reset every time mouseUpListener is called
-                seats[row][column]['set'] = 1;
-
-                if (seats[row][column]['status'] !== 'notset') {
+                    break;
+                case 'free':
+                    context.fillStyle="#138e10";
                     context.fillRect(
                         column * cellSize + 1,
                         row * cellSize + 1,
                         cellSize - 1,
                         cellSize - 1
                     );
-                }
+                    break;
+                case 'busy':
+                    context.fillStyle="#9C1616";
+                    context.fillRect(
+                        column * cellSize + 1,
+                        row * cellSize + 1,
+                        cellSize - 1,
+                        cellSize - 1
+                    );
+                    break;
+                default:
+                    break;
             }
+
+            storeTimeout = setTimeout(function(){
+                // Store 'seats' to sessionStorage if the browser supports it.
+                if (typeof(Storage) !== "undefined") {
+                    writeDebug('Storing seats into sessionStorage ...');
+                    sessionStorage.setItem('seats', JSON.stringify(seats));
+                } else {
+                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
+                }
+            }, 500);
+
         }
 
-        var drawTimeout;
+        function setSeatStatus(row, column) {
+            $('#lanrsvp-seat-row').text(row);
+            $('#lanrsvp-seat-column').text(column);
+
+            var status = '';
+            if (seats[row] === undefined || seats[row][column] === undefined ||
+                seats[row][column]['status'] === undefined) {
+                status = 'Not defined.';
+            } else if (seats[row][column]['status'] == 'free') {
+                status = 'Available.';
+            } else {
+                status = '<i class="fa fa-refresh fa-spin"></i>';
+
+                var data = {
+                    'action': 'get_attendee',
+                    'event_id': LanRsvpAdmin.event_id,
+                    'user_id': seats[row][column]['user_id']
+                };
+
+                $.post( ajaxurl, data, function(response) {
+                    $('#lanrsvp-seat-status').text(response);
+                });
+            }
+            $('#lanrsvp-seat-status').html(status);
+        }
 
         $('input[name="lanrsvp-seatmap-cols"]').change(function() {
             handleSeatmapUpdate();
@@ -268,6 +318,7 @@
             handleSeatmapUpdate();
         });
 
+        var drawTimeout;
         function handleSeatmapUpdate() {
             numberOfRows = $('input[name="lanrsvp-seatmap-rows"]').val();
             numberOfColumns = $('input[name="lanrsvp-seatmap-cols"]').val();

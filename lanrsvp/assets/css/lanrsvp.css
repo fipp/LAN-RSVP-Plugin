@@ -1,22 +1,15 @@
-div#lanrsvp-seatmap-legends {
+div#lanrsvp-seatmap-info {
     margin: 0 0 15px;
+    display:block;
 }
 
-span.lanrsvp-seatmap-legend-container {
-    display: block;
-    margin: 0 0 5px;
+table#lanrsvp-seatmap-legends {
+    float: left;
+    margin: 0 10px 0 0 ;
 }
 
-span.lanrsvp-seatmap-legend {
+td.lanrsvp-seatmap-legend {
     height: 20px;
     width: 20px;
-    display: inline-block;
     border: 1px solid black;
-    border-style: inset;
-    vertical-align: middle;
-    margin: 0 5px 0 0;
-}
-
-span.lanrsvp-align-middle {
-    vertical-align: middle;
 }

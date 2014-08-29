@@ -168,21 +168,41 @@ if (isset($data['event_id'])) {
         <p>
             Click on the grid below to draw the initial seat map. Click on the cells to change their status.
         </p>
-        <div id="lanrsvp-seatmap-legends">
-            <span class="lanrsvp-seatmap-legend-container">
-                <span class="lanrsvp-seatmap-legend" style="background-color:#ffffff"></span>
-                <span class="lanrsvp-align-middle">Undefined space - not the same as a available seat.</span>
-            </span>
-            <span class="lanrsvp-seatmap-legend-container">
-                <span class="lanrsvp-seatmap-legend" style="background-color:#138e10"></span>
-                <span class="lanrsvp-align-middle">Seat available for registration.</span>
-            </span>
-            <span class="lanrsvp-seatmap-legend-container">
-                <span class="lanrsvp-seatmap-legend" style="background-color:#9c1616"></span>
-                <span class="lanrsvp-align-middle">Seat taken.</span>
-            </span>
+        <div id="lanrsvp-seatmap-info">
+            <table id="lanrsvp-seatmap-legends">
+                <tr>
+                    <th colspan="2" align="left">Seat legend:</th>
+                </tr>
+                <tr>
+                    <td class="lanrsvp-seatmap-legend" style="background-color:#138e10"></td>
+                    <td>Seat available.</td>
+                </tr>
+                <tr>
+                    <td class="lanrsvp-seatmap-legend" style="background-color:#9c1616"></td>
+                    <td>Seat taken.</td>
+                </tr>
+            </table>
+            <table>
+                <tr>
+                    <th colspan="2" align="left">Seat info:</th>
+                </tr>
+                <tr>
+                    <td>Row:</td>
+                    <td id="lanrsvp-seat-row">0</td>
+                </tr>
+                <tr>
+                    <td>Column:</td>
+                    <td id="lanrsvp-seat-column">0</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td id="lanrsvp-seat-status">Not defined.</td>
+                </tr>
+            </table>
         </div>
-        <canvas id="lanrsvp-seatmap"></canvas>
+        <div>
+            <canvas id="lanrsvp-seatmap"></canvas>
+        </div>
     </div>
 
     <div class="lanrsvp-error"></div>

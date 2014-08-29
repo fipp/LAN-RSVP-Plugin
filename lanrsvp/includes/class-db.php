@@ -120,6 +120,23 @@ class DB
         ));
     }
 
+    public static function get_attendee($event_id, $user_id) {
+        if (!isset($event_id) || !isset($user_id)) {
+            return null;
+        }
+
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT *
+              FROM wp_lanrsvp_attendee a JOIN wp_lanrsvp_user b ON a.user_id = b.user_id
+              WHERE a.event_id = %s AND a.user_id = %s",
+            $event_id,
+            $user_id
+        ));
+    }
+
     public static function get_event($event_id)
     {
         if (!isset($event_id)) {

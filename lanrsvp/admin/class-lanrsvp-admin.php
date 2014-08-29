@@ -95,7 +95,7 @@ class LanRsvpAdmin {
         // Add AJAX handler for event registration
         add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
         add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
-
+        add_action( 'wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
     }
 
     /**
@@ -193,9 +193,13 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
-            $data['seatmap'] = null;
+            $data = [
+                'seatmap' => null,
+                'isAdmin' => true,
+            ];
             if (isset($_REQUEST['event_id'])) {
                 $data['seatmap'] = DB::get_event_seatmap($_REQUEST['event_id']);
+                $data['event_id'] = $_REQUEST['event_id'];
             }
             wp_localize_script(
                 $this->plugin_slug . '-seatmap-script',
@@ -362,6 +366,24 @@ class LanRsvpAdmin {
 
     public function delete_event() {
         echo DB::delete_event($_REQUEST['event_id']);
+        die();
+    }
+
+    public function get_attendee() {
+        if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['user_id'])) {
+            echo "Attendee not found!";
+        }
+        $attendee = DB::get_attendee($_REQUEST['event_id'], $_REQUEST['user_id']);
+        if (is_array($attendee) && is_object($attendee[0])) {
+            $attendee = get_object_vars($attendee[0]);
+        }
+
+        if (isset($attendee['full_name']) && isset($attendee['email'])) {
+            echo sprintf("Taken by %s <%s>", $attendee['full_name'], $attendee['email']);
+        } else {
+            echo "Error - Not found! Contact plugin author.";
+        }
+
         die();
     }
 
