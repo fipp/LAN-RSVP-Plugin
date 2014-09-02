@@ -309,7 +309,12 @@ class LanRsvp {
 
     function shortcode_handler_lanrsvp ( $attrs ) {
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
-            return $this->getAttendeesTable($attrs['event_id']);
+            $event_id = $attrs['event_id'];
+            $event = DB::get_event($event_id);
+
+
+            include_once('views/event.php');
+            return;
         } else {
             return 'LAN RSVP Plugin:<br />Could not recognize shortcode.<br />Valid example: [lanrsvp event_id="12"]';
         }

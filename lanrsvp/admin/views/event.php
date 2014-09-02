@@ -1,6 +1,6 @@
 <?php
 
-$data;
+$data = [];
 $event_id = false;
 $has_seatmap = true;
 if ( isset ( $_REQUEST['event_id'] ) ) {
@@ -11,6 +11,8 @@ if ( isset ( $_REQUEST['event_id'] ) ) {
         if (isset($data['has_seatmap']) && $data['has_seatmap'] == 0) {
             $has_seatmap = false;
         }
+    } else {
+        $event_id = false;
     }
 }
 
@@ -75,7 +77,7 @@ if (isset($data['event_id'])) {
                 <input
                     name="lanrsvp-event-enddate"
                     type="text"
-                    pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:"
+                    pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
                     placeholder="Optional ..."
                     class="regular-text code"
                     value="<?php echo (isset($data['end_date']) ? $data['end_date'] : '')  ?>"

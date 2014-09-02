@@ -11,6 +11,9 @@
  * @link      http://example.com
  * @copyright 2014 Your Name or Company Name
  */
+
+echo $event_id;
+
 ?>
 
-<!-- This file is used to markup the public facing aspect of the plugin. -->
+<h1>Hello, World!</h1>

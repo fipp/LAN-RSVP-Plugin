@@ -14,9 +14,13 @@
         var cellSize = 30; // How many pixels * pixels each seat cell should be
 
         var seats = getStoredSeatmap(); // Array holding the status for all seats
+        window.seats = seats;
         var mapSize = getGridSize(seats);
-        var numberOfRows = mapSize[0]; // Initial number of rows for the seat map
-        var numberOfColumns = mapSize[1]; // Initial columns of rows for the seat map
+        window.seatmapRowSize = mapSize[0]; // Initial number of rows for the seat map
+        $('input[name="lanrsvp-seatmap-rows"]').val(mapSize[0]);
+        window.seatmapColSize = mapSize[1]; // Initial columns of rows for the seat map
+        $('input[name="lanrsvp-seatmap-cols"]').val(mapSize[1]);
+
 
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
         var paintedOnMouseDown = Array(); // Array to keep track of which seats are painted on each mousedown
@@ -24,10 +28,7 @@
         var currentColumn = undefined; // Variable showing which column we are currently hovering
         var refreshingCells = false; // When refreshingCells === true, we cannot paint any new cells
 
-        drawGrid(numberOfRows, numberOfColumns);
-        if (seats.length > 0) {
-            drawSeats();
-        }
+        drawSeatmap();
 
         function getStoredSeatmap() {
             var seats = [];
@@ -57,18 +58,26 @@
         }
 
         function getGridSize(seats) {
-            var maxRow = 9;
-            var maxCol = 9;
+            var rows = 0;
+            var cols = 0;
             if (seats.length > 0) {
-                maxRow = seats.length;
-                maxCol = 0;
+                rows = seats.length;
                 for (var i = 0; i < seats.length; i++) {
-                    if (seats[i] !== undefined && seats[i].length > maxCol) {
-                        maxCol = seats[i].length;
+                    if (seats[i] !== undefined && seats[i].length > cols) {
+                        cols = seats[i].length;
                     }
                 }
             }
-            return [maxRow + 1, maxCol + 1];
+
+            if (rows < 4) {
+                rows = 4;
+            }
+
+            if (cols < 4) {
+                cols = 4;
+            }
+
+            return [rows + 1, cols + 1];
         }
 
         function drawGrid (rows, columns) {
@@ -89,6 +98,21 @@
             canvas.addEventListener('mouseup', mouseUpListener, false);
 
             context = canvas.getContext("2d");
+
+            context.fillStyle="#dddddd";
+            context.fillRect(
+                0,
+                0,
+                gridWidth + 1,
+                gridHeight + 1
+            );
+            context.clearRect(
+                cellSize,
+                cellSize,
+                gridWidth + 1 - 2 * cellSize,
+                gridHeight + 1 - 2 * cellSize
+            );
+            context.fillStyle="#333333";
 
             for (var x = 0; x <= gridHeight; x += cellSize) {
                 context.moveTo(0.5 + x, 0);
@@ -139,14 +163,16 @@
                     currentRow = row;
                     currentColumn = column;
 
-                    //writeDebug('hover: row ' + row + ', column ' + column);
-                    setSeatStatus(currentRow,currentColumn);
+                    if (withinBounds()) {
+                        //writeDebug('hover: row ' + row + ', column ' + column);
+                        setSeatStatus(currentRow,currentColumn);
 
-                    if (mouseIsDown && !refreshingCells) {
-                        if (toggleSeatStatus(currentRow, currentColumn)) {
-                            paintSeat(currentRow, currentColumn);
+                        if (mouseIsDown && !refreshingCells) {
+                            if (toggleSeatStatus(currentRow, currentColumn)) {
+                                paintSeat(currentRow, currentColumn);
+                            }
+
                         }
-
                     }
                 }
             }
@@ -155,28 +181,29 @@
         function mouseDownListener() {
             mouseIsDown = true;
             if (!refreshingCells) {
-                if (toggleSeatStatus(currentRow, currentColumn)) {
-                    paintSeat(currentRow, currentColumn);
+                if (withinBounds()) {
+                    if (toggleSeatStatus(currentRow, currentColumn)) {
+                        paintSeat(currentRow, currentColumn);
+                    }
                 }
             }
+        }
+
+        function withinBounds() {
+            return (
+                currentRow !== 0 &&
+                currentColumn !== 0 &&
+                currentRow !== (window.seatmapRowSize - 1) &&
+                currentColumn !== (window.seatmapColSize - 1));
         }
 
         var storeSeatsTimeout;
         function mouseUpListener() {
             mouseIsDown = false;
             paintedOnMouseDown = Array();
-
             storeSeatsTimeout = setTimeout(function(){
-                // Store 'seats' to sessionStorage the mouse if the browser supports it.
-                if (typeof(Storage) !== "undefined") {
-                    writeDebug('Storing seats into sessionStorage ...');
-                    writeDebug(seats);
-                    sessionStorage.setItem('seats', JSON.stringify(seats));
-                } else {
-                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
-                }
+                window.seats = seats;
             }, 500);
-
         }
 
         function getMousePos(canvas, evt) {
@@ -301,20 +328,25 @@
         }
 
         $('input[name="lanrsvp-seatmap-cols"]').change(function() {
-            handleSeatmapUpdate();
+            window.seatmapRowSize = $('input[name="lanrsvp-seatmap-rows"]').val();
+            window.seatmapColSize = $('input[name="lanrsvp-seatmap-cols"]').val();
+            drawSeatmap();
         });
 
         $('input[name="lanrsvp-seatmap-rows"]').change(function() {
-            handleSeatmapUpdate();
+            window.seatmapRowSize = $('input[name="lanrsvp-seatmap-rows"]').val();
+            window.seatmapColSize = $('input[name="lanrsvp-seatmap-cols"]').val();
+            drawSeatmap();
         });
 
         var drawTimeout;
-        function handleSeatmapUpdate() {
-            numberOfRows = $('input[name="lanrsvp-seatmap-rows"]').val();
-            numberOfColumns = $('input[name="lanrsvp-seatmap-cols"]').val();
+        function drawSeatmap() {
             clearTimeout(drawTimeout);
             drawTimeout = setTimeout(function() {
-                drawGrid(numberOfRows, numberOfColumns);
+                drawGrid(window.seatmapRowSize, window.seatmapColSize);
+                if (seats.length > 0) {
+                    drawSeats();
+                }
             }, 250);
         }
 
