@@ -19,6 +19,7 @@
         var numberOfColumns = mapSize[1]; // Initial columns of rows for the seat map
 
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
+        var paintedOnMouseDown = Array(); // Array to keep track of which seats are painted on each mousedown
         var currentRow = undefined; // Variable showing which row we are currently hovering
         var currentColumn = undefined; // Variable showing which column we are currently hovering
         var refreshingCells = false; // When refreshingCells === true, we cannot paint any new cells
@@ -160,32 +161,22 @@
             }
         }
 
+        var storeSeatsTimeout;
         function mouseUpListener() {
-
-            /*
-            Iterate over the seats array and reset the 'set' variable,
-            preventing seats from being painted twice during the same
-            mousedown.
-             */
-
             mouseIsDown = false;
+            paintedOnMouseDown = Array();
 
-            var start = new Date().getMilliseconds();
-            refreshingCells = true;
-            for (var row = 0; row < seats.length; row++) {
-                if (seats[row] !== undefined) {
-                    for (var col = 0; col < seats[row].length; col++) {
-                        if (seats[row][col] !== undefined) {
-                            seats[row][col]['donottoggle'] = 0;
-                        }
-                    }
+            storeSeatsTimeout = setTimeout(function(){
+                // Store 'seats' to sessionStorage the mouse if the browser supports it.
+                if (typeof(Storage) !== "undefined") {
+                    writeDebug('Storing seats into sessionStorage ...');
+                    writeDebug(seats);
+                    sessionStorage.setItem('seats', JSON.stringify(seats));
+                } else {
+                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
                 }
-            }
-            refreshingCells = false;
-            var end = new Date().getMilliseconds();
-            var time = end - start;
+            }, 500);
 
-            writeDebug("mouseUpListener: The 'set' variable of all seats was reset in: " + time);
         }
 
         function getMousePos(canvas, evt) {
@@ -208,10 +199,10 @@
                 seats[row][column] = Object();
             }
 
-            if (seats[row][column]['donottoggle'] === 1) {
-                // If we already have painted this cell during this
-                // mousedown, we don't paint it again.
-                return false;
+            // If we already have painted this cell during this
+            // mousedown, we don't paint it again.
+            if (paintedOnMouseDown[row] !== undefined && paintedOnMouseDown[row][column] !== undefined) {
+                return;
             }
 
             var hasToggled = false;
@@ -224,7 +215,7 @@
                     break;
                 case 'free':
                     hasToggled = true;
-                    seats[row][column]['status'] = undefined;
+                    delete seats[row][column];
                     break;
                 default:
                     break;
@@ -232,16 +223,25 @@
 
             // Variable to make sure we don't paint this cell again during this
             // "paint session". Reset every time mouseUpListener is called
-            seats[row][column]['donottoggle'] = 1;
+            if (paintedOnMouseDown[row] === undefined) {
+                paintedOnMouseDown[row] = Array();
+            }
+            paintedOnMouseDown[row][column] = true;
 
             return hasToggled;
         }
 
-        var storeTimeout;
         function paintSeat (row, column) {
-            clearTimeout(storeTimeout);
+            clearTimeout(storeSeatsTimeout);
 
-            switch (seats[row][column]['status']) {
+            var status;
+            if (seats[row] === undefined || seats[row][column] === undefined) {
+                status = undefined;
+            } else {
+                status = seats[row][column]['status'];
+            }
+
+            switch (status) {
                 case undefined:
                     context.clearRect(
                         column * cellSize + 1,
@@ -271,16 +271,6 @@
                 default:
                     break;
             }
-
-            storeTimeout = setTimeout(function(){
-                // Store 'seats' to sessionStorage if the browser supports it.
-                if (typeof(Storage) !== "undefined") {
-                    writeDebug('Storing seats into sessionStorage ...');
-                    sessionStorage.setItem('seats', JSON.stringify(seats));
-                } else {
-                    console.log('Error! browser does not support sessionStorage. Event creation cannot continue.');
-                }
-            }, 500);
 
         }
 

@@ -94,6 +94,7 @@ class LanRsvpAdmin {
         // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
         // Add AJAX handler for event registration
         add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
+        add_action( 'wp_ajax_update_event', array( $this, 'create_event' ) );
         add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
         add_action( 'wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
     }
@@ -360,6 +361,11 @@ class LanRsvpAdmin {
     }
 
     public function create_event() {
+        echo DB::create_event($_REQUEST);
+        die();
+    }
+
+    public function update_event() {
         echo DB::create_event($_REQUEST);
         die();
     }

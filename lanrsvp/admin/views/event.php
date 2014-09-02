@@ -1,6 +1,7 @@
 <?php
 
 $data;
+$event_id = false;
 $has_seatmap = true;
 if ( isset ( $_REQUEST['event_id'] ) ) {
     $event_id = $_REQUEST['event_id'];
@@ -26,14 +27,13 @@ if (isset($data['event_id'])) {
 
 <form method="post" class="lanrsvp-event-form">
     <table class="form-table">
-        <?php if (isset($data['event_id'])): ?>
+        <?php if ($event_id): ?>
         <tr>
-            <th scope="row"><label for="lanrsvp-event-title">Event ID</label></th>
+            <th scope="row"><label for="lanrsvp-event-id">Event ID</label></th>
             <td>
                 <input
-                    name="lanrsvp-event-title"
+                    name="lanrsvp-event-id"
                     type="text"
-                    required
                     class="regular-text code"
                     value="<?php echo $data['event_id'];  ?>"
                     disabled
@@ -84,6 +84,22 @@ if (isset($data['event_id'])) {
         </tr>
         <tr>
             <th scope="row">Registration type</th>
+            <?php if ($event_id) { ?>
+            <td>
+                <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
+                    <label title="type">
+                        <input
+                            type="radio"
+                            checked
+                            name="lanrsvp-event-type"
+                            value="<?php echo ($has_seatmap ? "seatmap" : "general"); ?>"
+                            disabled
+                            />
+                        <span><?php echo ($has_seatmap ? "With seat map" : "Without seat map"); ?></span>
+                    </label>
+                </fieldset>
+            </td>
+            <?php } else { ?>
             <td>
                 <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
                     <label title="seatmap">
@@ -91,7 +107,7 @@ if (isset($data['event_id'])) {
                             type="radio"
                             name="lanrsvp-event-type"
                             value="seatmap"
-                            <?php echo $has_seatmap ? 'checked' : ''; ?>
+                            checked
                             />
                         <span>With seat map</span>
                     </label> <br />
@@ -100,12 +116,12 @@ if (isset($data['event_id'])) {
                             type="radio"
                             name="lanrsvp-event-type"
                             value="general"
-                            <?php echo !$has_seatmap ? 'checked' : ''; ?>
                             />
                         <span>Without seat map</span>
                     </label>
                 </fieldset>
             </td>
+            <?php } ?>
         </tr>
         <tr>
             <th scope="row"><label for="lanrsvp-event-minattendees">Minimum number of attendees</label></th>

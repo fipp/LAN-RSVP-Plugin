@@ -20,13 +20,13 @@
         $("form.lanrsvp-event-form").submit(function(e) {
             e.preventDefault();
 
-            var data = {
-                action: 'create_event'
-            };
-
+            var data = Object();
             $('form.lanrsvp-event-form').find('input').each(function(){
                data[$(this).attr('name')] = $(this).val();
             });
+
+            data['action']  = ('lanrsvp-event-id' in data ? 'update_event' : 'create_event');
+
             data['lanrsvp-event-type'] = $('input[name=lanrsvp-event-type]:checked', '.lanrsvp-event-form').val();
 
             if (typeof(Storage) !== "undefined") {

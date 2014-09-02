@@ -120,7 +120,8 @@ class DB
         ));
     }
 
-    public static function get_attendee($event_id, $user_id) {
+    public static function get_attendee($event_id, $user_id)
+    {
         if (!isset($event_id) || !isset($user_id)) {
             return null;
         }
@@ -153,7 +154,8 @@ class DB
         ));
     }
 
-    public static function get_event_seatmap($event_id) {
+    public static function get_event_seatmap($event_id)
+    {
         if (!isset($event_id)) {
             return null;
         }
@@ -168,7 +170,8 @@ class DB
         ));
     }
 
-    public static function get_events() {
+    public static function get_events()
+    {
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -186,7 +189,8 @@ class DB
         return $res;
     }
 
-    public static function get_users() {
+    public static function get_users()
+    {
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -194,7 +198,8 @@ class DB
         return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name");
     }
 
-    public static function get_password_hash($user_id = null, $email = null) {
+    public static function get_password_hash($user_id = null, $email = null)
+    {
         if (!isset($user_id) && !isset($email)) {
             return null;
         }
@@ -223,15 +228,15 @@ class DB
         return $wpdb->get_results($sql);
     }
 
-    public static function create_event($event) {
+    public static function create_event($event)
+    {
         /** @var $wpdb WPDB */
         global $wpdb;
 
         $e = $event;
+        $event_id = (isset($e['lanrsvp-event-id']) ? $e['lanrsvp-event-id'] : '');
 
         $wpdb->query('START TRANSACTION');
-
-        $error = '';
 
         try {
             $type = $e['lanrsvp-event-type'];
@@ -254,29 +259,50 @@ class DB
                 array_push($format, '%s');
             }
 
-            $wpdb->insert(
-                $wpdb->prefix . self::EVENT_TABLE_NAME,
-                $data,
-                $format
-            );
+            if (is_int($event_id)) {
+                $wpdb->update(
+                    $wpdb->prefix . self::EVENT_TABLE_NAME,
+                    $data,
+                    array('event_id' => $e['lanrsvp-event-id']),
+                    $format,
+                    array('%d')
+                );
+            } else {
+                $wpdb->insert(
+                    $wpdb->prefix . self::EVENT_TABLE_NAME,
+                    $data,
+                    $format
+                );
+                $event_id = $wpdb->insert_id;
+            }
 
-            $event_id = $wpdb->insert_id;
             if (is_int($event_id)) {
                 if ($type == 'seatmap') {
-                    foreach ($e['lanrsvp-event-seatmap'] as $row => $cols) {
-                        if (is_array($cols)) {
-                            foreach ($cols as $col => $cell) {
-                                if (is_array($cell)) {
-                                    $status = $cell['status'];
-                                    $wpdb->insert(
-                                        $wpdb->prefix . self::SEAT_TABLE_NAME,
-                                        array(
+                    if (is_array($e['lanrsvp-event-seatmap'])) {
+                        self::delete_seatmap($event_id);
+
+                        foreach ($e['lanrsvp-event-seatmap'] as $row => $cols) {
+                            if (is_array($cols)) {
+                                foreach ($cols as $col => $cell) {
+                                    if (is_array($cell) && isset($cell['status'])) {
+                                        $seat_data = array(
                                             'event_id' => $event_id,
                                             'seat_row' => $row,
                                             'seat_column' => $col
-                                        ),
-                                        array('%d', '%d', '%d', '%s')
-                                    );
+                                        );
+                                        $seat_data_format = array('%d', '%d', '%d');
+
+                                        if (isset($cell['user_id']) && is_numeric($cell['user_id'])) {
+                                            $seat_data['user_id'] = $cell['user_id'];
+                                            array_push($seat_data_format, '%d');
+                                        }
+
+                                        $wpdb->insert(
+                                            $wpdb->prefix . self::SEAT_TABLE_NAME,
+                                            $seat_data,
+                                            $seat_data_format
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -295,12 +321,20 @@ class DB
     }
 
     public static function delete_event($event_id) {
-        /** @var $wpdb WPDB */
-        global $wpdb;
         if (isset($event_id) && is_numeric($event_id)) {
-            $wpdb->delete( $wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
-            $wpdb->delete( $wpdb->prefix . self::ATTENDEE_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
-            $wpdb->delete( $wpdb->prefix . self::EVENT_TABLE_NAME, array('event_id' => $event_id), array( '%d' ) );
+            /** @var $wpdb WPDB */
+            global $wpdb;
+            $wpdb->delete($wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array('%d'));
+            $wpdb->delete($wpdb->prefix . self::ATTENDEE_TABLE_NAME, array('event_id' => $event_id), array('%d'));
+            $wpdb->delete($wpdb->prefix . self::EVENT_TABLE_NAME, array('event_id' => $event_id), array('%d'));
+        }
+    }
+
+    private static function delete_seatmap($event_id) {
+        if (isset($event_id) && is_numeric($event_id)) {
+            /** @var $wpdb WPDB */
+            global $wpdb;
+            $wpdb->delete($wpdb->prefix . self::ATTENDEE_TABLE_NAME, array('event_id' => $event_id), array('%d'));
         }
     }
 }
