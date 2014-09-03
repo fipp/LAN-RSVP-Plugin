@@ -1,11 +1,12 @@
 <?php
+
 class Attendees_Table extends WP_List_Table_Copy {
 
     /**
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
      */
-    function __construct($event_id) {
+    function __construct($event_id, $admin = false, $has_seatmap = false) {
         parent::__construct( array(
             'singular'=> 'wp_list_text_link', // Singular label
             'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
@@ -18,7 +19,8 @@ class Attendees_Table extends WP_List_Table_Copy {
             $attendees[$key] = get_object_vars($val);
         }
         $this->attendees = $attendees;
-
+        $this->isAdmin = $admin;
+        $this->has_seatmap = $has_seatmap;
     }
 
     /*
@@ -41,14 +43,24 @@ class Attendees_Table extends WP_List_Table_Copy {
      * array have to be the same as in the data array otherwise the respective columns aren't displayed.
      */
     function get_columns(){
-        $columns = array(
-            'user_id'           => 'ID',
-            'full_name'         => 'Name',
-            'email'             => 'E-mail Address',
-            'seat_row'          => 'Seat Row',
-            'seat_column'       => 'Seat Column',
-            'registration_date' => 'Registration Date'
-        );
+        $columns = [];
+
+        if ($this->isAdmin) {
+            $columns['user_id'] = 'ID';
+        }
+
+        $columns['full_name'] = 'Name';
+
+        if ($this->isAdmin) {
+            $columns['email'] = 'E-mail Address';
+        }
+
+        if ($this->has_seatmap) {
+            $columns['seat_row'] = 'Seat Row';
+            $columns['seat_column'] = 'Seat Column';
+        }
+
+        $columns['registration_date'] = 'Registration Date';
         return $columns;
     }
 
@@ -113,8 +125,10 @@ class Attendees_Table extends WP_List_Table_Copy {
             case 'email':
             case 'seat_row':
             case 'seat_column':
-            case 'registration_date';
                 return $item[ $column_name ];
+            case 'registration_date';
+                $timestamp = strtotime( $item[ $column_name ] );
+                return date( 'D d.m, H:i', $timestamp );
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

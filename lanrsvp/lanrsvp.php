@@ -29,6 +29,11 @@ if ( ! defined( 'WPINC' ) ) {
  * Common classes
  *----------------------------------------------------------------------------*/
 require_once( ABSPATH . 'wp-includes/class-phpass.php');
+if (!is_admin()) {
+    // Required to use wp-list-table outside admin context
+    require_once( ABSPATH . 'wp-admin/includes/screen.php' );
+    require_once( ABSPATH . 'wp-admin/includes/template.php' );
+}
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-db.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-wp-list-table-copy.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'includes/attendees-table.php' );

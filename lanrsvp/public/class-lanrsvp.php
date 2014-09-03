@@ -66,15 +66,17 @@ class LanRsvp {
         // Activate plugin when new blog is added
         add_action( 'wpmu_new_blog', array( $this, 'activate_new_site' ) );
 
-        // Load public-facing style sheet and JavaScript.
-        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
-        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+        // Register (but not enqueue) public-facing style sheet and JavaScript.
+        // The enqueue will be in the shortcode.
+        add_action( 'wp_enqueue_scripts', array( $this, 'register_styles') );
+        add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts') );
 
         add_shortcode( 'lanrsvp', array( $this, 'shortcode_handler_lanrsvp' ) );
 
         // AJAX login
         add_action('wp_ajax_login', array( $this, 'ajaxLogin'));
         add_action('wp_ajax_nopriv_login', array( $this, 'ajaxLogin'));
+        add_action('wp_ajax_nopriv_get_attendee', array( $this, 'get_attendee' ) );
     }
 
     /**
@@ -257,21 +259,48 @@ class LanRsvp {
     }
 
     /**
-     * Register and enqueue public-facing style sheet.
+     * Register public-facing style sheets.
      *
      * @since    1.0.0
      */
-    public function enqueue_styles() {
-        wp_enqueue_style( $this->plugin_slug . '-plugin-styles', plugins_url( 'assets/css/lanrsvp-public.css', __FILE__ ), array(), self::VERSION );
+    public function register_styles() {
+        wp_register_style(
+            $this->plugin_slug .'-fontawesome',
+            '//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css',
+            array(),
+            self::VERSION
+        );
+
+        wp_register_style(
+            $this->plugin_slug .'-common-styles',
+            plugins_url( '../assets/css/lanrsvp.css', __FILE__ ),
+            array(),
+            self::VERSION
+        );
     }
 
     /**
-     * Register and enqueues public-facing JavaScript files.
+     * Register public-facing JavaScript files.
      *
      * @since    1.0.0
      */
-    public function enqueue_scripts() {
-        wp_enqueue_script( $this->plugin_slug . '-plugin-script', plugins_url( 'assets/js/lanrsvp.js', __FILE__ ), array( 'jquery' ), self::VERSION );
+    public function register_scripts() {
+        /*
+        wp_register_script(
+            $this->plugin_slug . '-plugin-script',
+            plugins_url( 'assets/js/lanrsvp.js', __FILE__ ),
+            array( 'jquery' ),
+            self::VERSION
+        );
+        */
+
+        wp_register_script(
+            $this->plugin_slug . '-seatmap-script',
+            plugins_url( '../assets/js/lanrsvp-seatmap.js', __FILE__ ),
+            array( 'jquery' ),
+            self::VERSION
+        );
+
     }
 
     /**
@@ -304,10 +333,40 @@ class LanRsvp {
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
-            include_once('views/event.php');
-            return;
+            if (is_array($event) && is_object($event[0])) {
+
+                $event = get_object_vars($event[0]);
+                $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
+
+                if ($has_seatmap) {
+                    wp_enqueue_script($this->plugin_slug . '-seatmap-script');
+                    wp_enqueue_style($this->plugin_slug .'-fontawesome');
+                    wp_enqueue_style($this->plugin_slug .'-common-styles');
+
+                    $seatmap_data = [
+                        'event_id'        => $event_id,
+                        'isAdmin'         => false,
+                        'isAuthenticated' => false,
+                        'seats'           => DB::get_event_seatmap($event_id),
+                        'ajaxurl'         => admin_url('admin-ajax.php')
+                    ];
+
+                    wp_localize_script(
+                        $this->plugin_slug . '-seatmap-script',
+                        'seatmap_data',
+                        $seatmap_data
+                    );
+
+                }
+
+                $attendeesTable = new Attendees_Table($event_id, $is_admin = false, $has_seatmap);
+                include_once('views/event.php');
+                return;
+            } else {
+                return "LAN RSVP Plugin:<br />event id $event_id is not valid<br />";
+            }
         } else {
-            return 'LAN RSVP Plugin:<br />Could not recognize shortcode.<br />Valid example: [lanrsvp event_id="12"]';
+            return 'LAN RSVP Plugin:<br />Could not recognize shortcode.<br />Valid example: [lanrsvp event_id="12"]<br />';
         }
     }
 
@@ -420,6 +479,26 @@ HTML;
             echo "You're logged in!";
         } else {
             echo $this->getLoginForm("Wrong email and/or password!");
+        }
+
+        die();
+    }
+
+    public static function get_attendee() {
+        if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['user_id'])) {
+            echo "Attendee not found!";
+            die();
+        }
+
+        $attendee = DB::get_attendee($_REQUEST['event_id'], $_REQUEST['user_id']);
+        if (is_array($attendee) && is_object($attendee[0])) {
+            $attendee = get_object_vars($attendee[0]);
+        }
+
+        if (isset($attendee['full_name']) && isset($attendee['email'])) {
+            echo sprintf("Taken by %s", $attendee['full_name']);
+        } else {
+            echo "Error - Not found! Contact plugin author.";
         }
 
         die();

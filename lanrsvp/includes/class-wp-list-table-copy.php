@@ -1,4 +1,6 @@
 <?php
+
+
 /**
  * Base class for displaying a list of items in an ajaxified HTML table.
  * This is a un-altered copy of /wp-admin/includes/class-wp-list-table.php.

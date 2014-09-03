@@ -186,41 +186,12 @@ if (isset($data['event_id'])) {
         <p>
             Click on the grid below to draw the initial seat map. Click on the cells to change their status.
         </p>
-        <div id="lanrsvp-seatmap-info">
-            <table id="lanrsvp-seatmap-legends">
-                <tr>
-                    <th colspan="2" align="left">Seat legend:</th>
-                </tr>
-                <tr>
-                    <td class="lanrsvp-seatmap-legend" style="background-color:#138e10"></td>
-                    <td>Seat available.</td>
-                </tr>
-                <tr>
-                    <td class="lanrsvp-seatmap-legend" style="background-color:#9c1616"></td>
-                    <td>Seat taken.</td>
-                </tr>
-            </table>
-            <table>
-                <tr>
-                    <th colspan="2" align="left">Seat info:</th>
-                </tr>
-                <tr>
-                    <td>Row:</td>
-                    <td id="lanrsvp-seat-row">0</td>
-                </tr>
-                <tr>
-                    <td>Column:</td>
-                    <td id="lanrsvp-seat-column">0</td>
-                </tr>
-                <tr>
-                    <td>Status:</td>
-                    <td id="lanrsvp-seat-status">Not defined.</td>
-                </tr>
-            </table>
-        </div>
-        <div>
-            <canvas id="lanrsvp-seatmap"></canvas>
-        </div>
+
+        <?php
+            chdir(__DIR__);
+            include_once(realpath('./../../views/seatmap.php'));
+        ?>
+
     </div>
 
     <div class="lanrsvp-error"></div>

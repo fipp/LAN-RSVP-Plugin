@@ -33,9 +33,9 @@
         function getStoredSeatmap() {
             var seats = [];
             var count = 0;
-            if (LanRsvpAdmin !== null && LanRsvpAdmin.seatmap !== null) {
-                for (var i = 0; i < LanRsvpAdmin.seatmap.length; i++) {
-                    var seat = LanRsvpAdmin.seatmap[i];
+            if (seatmap_data !== undefined && seatmap_data['seats'] !== undefined) {
+                for (var i = 0; i < seatmap_data['seats'].length; i++) {
+                    var seat = seatmap_data['seats'][i];
                     if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
                         count++;
                         var row = seat['seat_row'];
@@ -69,11 +69,15 @@
                 }
             }
 
-            if (rows < 4) {
+            if (rows === 0) {
+                rows = 9;
+            } else if (rows < 4) {
                 rows = 4;
             }
 
-            if (cols < 4) {
+            if (cols === 0) {
+                cols = 9;
+            } else if (cols < 4) {
                 cols = 4;
             }
 
@@ -316,11 +320,11 @@
 
                 var data = {
                     'action': 'get_attendee',
-                    'event_id': LanRsvpAdmin.event_id,
+                    'event_id': seatmap_data['event_id'],
                     'user_id': seats[row][column]['user_id']
                 };
 
-                $.post( ajaxurl, data, function(response) {
+                $.post( seatmap_data['ajaxurl'], data, function(response) {
                     $('#lanrsvp-seat-status').text(response);
                 });
             }
