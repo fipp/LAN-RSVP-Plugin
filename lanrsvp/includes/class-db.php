@@ -6,8 +6,7 @@
  * Time: 15:26
  */
 
-class DB
-{
+class DB {
     const EVENT_TABLE_NAME = 'lanrsvp_event';
     const USER_TABLE_NAME = 'lanrsvp_user';
     const ATTENDEE_TABLE_NAME = 'lanrsvp_attendee';
@@ -15,20 +14,20 @@ class DB
 
     const DEBUG = true;
 
-    public static function install()
-    {
+    public static function install() {
         /** @var $wpdb WPDB */
 
         global $wpdb;
 
         $user_sql = sprintf("CREATE TABLE %s (
                 user_id MEDIUMINT NOT NULL AUTO_INCREMENT,
-                email VARCHAR(128) NOT NULL,
+                email VARCHAR(128) NOT NULL UNIQUE,
                 full_name VARCHAR(64) NOT NULL,
                 password CHAR(32) NOT NULL,
                 registration_date TIMESTAMP DEFAULT NOW(),
-                PRIMARY KEY  (user_id),
-                UNIQUE KEY email (email)
+                activation_key CHAR(32) NOT NULL UNIQUE,
+                is_activated ENUM('0','1') NOT NULL DEFAULT '0',
+                PRIMARY KEY  (user_id)
             );",
             $wpdb->prefix . self::USER_TABLE_NAME
         );
@@ -82,8 +81,7 @@ class DB
         dbDelta($seat_sql);
     }
 
-    public static function uninstall()
-    {
+    public static function uninstall() {
         /** @var $wpdb WPDB */
         global $wpdb;
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::SEAT_TABLE_NAME));
@@ -92,8 +90,7 @@ class DB
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::USER_TABLE_NAME));
     }
 
-    public static function get_attendees($event_id)
-    {
+    public static function get_attendees($event_id) {
         if (!isset($event_id)) {
             return null;
         }
@@ -120,8 +117,7 @@ class DB
         ));
     }
 
-    public static function get_attendee($event_id, $user_id)
-    {
+    public static function get_attendee($event_id, $user_id) {
         if (!isset($event_id) || !isset($user_id)) {
             return null;
         }
@@ -138,8 +134,7 @@ class DB
         ));
     }
 
-    public static function get_event($event_id)
-    {
+    public static function get_event($event_id) {
         if (!isset($event_id)) {
             return null;
         }
@@ -154,8 +149,7 @@ class DB
         ));
     }
 
-    public static function get_event_seatmap($event_id)
-    {
+    public static function get_event_seatmap($event_id) {
         if (!isset($event_id)) {
             return null;
         }
@@ -170,8 +164,7 @@ class DB
         ));
     }
 
-    public static function get_events()
-    {
+    public static function get_events() {
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -189,8 +182,7 @@ class DB
         return $res;
     }
 
-    public static function get_users()
-    {
+    public static function get_users() {
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -198,8 +190,7 @@ class DB
         return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name");
     }
 
-    public static function get_password_hash($user_id = null, $email = null)
-    {
+    public static function get_password_hash($user_id = null, $email = null) {
         if (!isset($user_id) && !isset($email)) {
             return null;
         }
@@ -228,8 +219,7 @@ class DB
         return $wpdb->get_results($sql);
     }
 
-    public static function create_event($event)
-    {
+    public static function create_event($event) {
         /** @var $wpdb WPDB */
         global $wpdb;
 
