@@ -103,16 +103,17 @@ class DB {
         $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
             "SELECT
-              a.user_id AS 'User ID',
-              b.full_name AS 'Full name',
-              c.seat_row AS 'Row',
-              c.seat_column AS 'Column',
-              a.registration_date AS 'Registration date'
+              a.user_id,
+              b.full_name,
+              b.email,
+              c.seat_row,
+              c.seat_column,
+              a.registration_date
              FROM
               $attendee_table_name a
               JOIN $user_table_name b ON (a.user_id = b.user_id)
               JOIN $seat_table_name c ON (a.event_id = c.event_id AND a.user_id = c.user_id)
-             WHERE event_id = %s",
+             WHERE a.event_id = %s",
             $event_id
         ));
     }

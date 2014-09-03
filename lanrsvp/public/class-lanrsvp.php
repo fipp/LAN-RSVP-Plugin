@@ -70,13 +70,6 @@ class LanRsvp {
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-        /* Define custom functionality.
-         * Refer To http://codex.wordpress.org/Plugin_API#Hooks.2C_Actions_and_Filters
-         */
-        // add_action( '@TODO', array( $this, 'action_method_name' ) );
-        // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
-        add_shortcode( 'lanrsvp', array( $this, 'shortcode_handler_lanrsvp' ) );
-
         add_shortcode( 'lanrsvp', array( $this, 'shortcode_handler_lanrsvp' ) );
 
         // AJAX login
@@ -311,8 +304,6 @@ class LanRsvp {
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
-
-
             include_once('views/event.php');
             return;
         } else {

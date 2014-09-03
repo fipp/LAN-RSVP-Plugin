@@ -12,8 +12,9 @@
  * @copyright 2014 Your Name or Company Name
  */
 
-echo $event_id;
+$attendeesTable = new Attendees_Table($event_id);
+//$attendeesTable->prepare_items();
+//$attendeesTable->display();
 
 ?>
 
-<h1>Hello, World!</h1>

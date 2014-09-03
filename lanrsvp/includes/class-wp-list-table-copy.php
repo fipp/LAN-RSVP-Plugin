@@ -80,7 +80,6 @@ class WP_List_Table_Copy {
 		) );
 
 		$this->screen = convert_to_screen( $args['screen'] );
-
 		add_filter( "manage_{$this->screen->id}_columns", array( $this, 'get_columns' ), 0 );
 
 		if ( !$args['plural'] )
