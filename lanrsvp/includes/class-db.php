@@ -224,7 +224,6 @@ class DB {
         global $wpdb;
 
         $e = $event;
-        $event_id = (isset($e['lanrsvp-event-id']) ? $e['lanrsvp-event-id'] : '');
 
         $wpdb->query('START TRANSACTION');
 
@@ -249,7 +248,9 @@ class DB {
                 array_push($format, '%s');
             }
 
-            if (is_int($event_id)) {
+            $event_id;
+            if (isset($e['lanrsvp-event-id']) && is_numeric($e['lanrsvp-event-id'])) {
+                $event_id = intval($e['lanrsvp-event-id']);
                 $wpdb->update(
                     $wpdb->prefix . self::EVENT_TABLE_NAME,
                     $data,
@@ -266,7 +267,7 @@ class DB {
                 $event_id = $wpdb->insert_id;
             }
 
-            if (is_int($event_id)) {
+            if (is_numeric($event_id)) {
                 if ($type == 'seatmap') {
                     if (is_array($e['lanrsvp-event-seatmap'])) {
                         self::delete_seatmap($event_id);
@@ -322,9 +323,10 @@ class DB {
 
     private static function delete_seatmap($event_id) {
         if (isset($event_id) && is_numeric($event_id)) {
+            LanRsvp::_log("deleting seatmap $event_id ...");
             /** @var $wpdb WPDB */
             global $wpdb;
-            $wpdb->delete($wpdb->prefix . self::ATTENDEE_TABLE_NAME, array('event_id' => $event_id), array('%d'));
+            $wpdb->delete($wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array('%d'));
         }
     }
 }

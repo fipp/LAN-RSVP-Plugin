@@ -94,7 +94,7 @@ class LanRsvpAdmin {
         // add_filter( '@TODO', array( $this, 'filter_method_name' ) );
         // Add AJAX handler for event registration
         add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
-        add_action( 'wp_ajax_update_event', array( $this, 'create_event' ) );
+        add_action( 'wp_ajax_update_event', array( $this, 'update_event' ) );
         add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
         add_action( 'wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
     }
@@ -187,26 +187,28 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
-            wp_enqueue_script(
-                $this->plugin_slug . '-seatmap-script',
-                plugins_url( 'assets/js/lanrsvp-seatmap.js', __FILE__ ),
-                array( 'jquery' ),
-                LanRsvpAdmin::VERSION
-            );
+            if (substr( $screen->id, -strlen( $this->plugin_slug . '_event' ) ) == $this->plugin_slug . '_event') {
+                wp_enqueue_script(
+                    $this->plugin_slug . '-seatmap-script',
+                    plugins_url( '../assets/js/lanrsvp-seatmap.js', __FILE__ ),
+                    array( 'jquery' ),
+                    LanRsvpAdmin::VERSION
+                );
 
-            $data = [
-                'seatmap' => null,
-                'isAdmin' => true,
-            ];
-            if (isset($_REQUEST['event_id'])) {
-                $data['seatmap'] = DB::get_event_seatmap($_REQUEST['event_id']);
-                $data['event_id'] = $_REQUEST['event_id'];
+                $data = [
+                    'seatmap' => null,
+                    'isAdmin' => true,
+                ];
+                if (isset($_REQUEST['event_id'])) {
+                    $data['seatmap'] = DB::get_event_seatmap($_REQUEST['event_id']);
+                    $data['event_id'] = $_REQUEST['event_id'];
+                }
+                wp_localize_script(
+                    $this->plugin_slug . '-seatmap-script',
+                    'LanRsvpAdmin',
+                    $data
+                );
             }
-            wp_localize_script(
-                $this->plugin_slug . '-seatmap-script',
-                'LanRsvpAdmin',
-                $data
-            );
         }
 
     }

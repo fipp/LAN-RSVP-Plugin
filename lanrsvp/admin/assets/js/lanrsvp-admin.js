@@ -29,11 +29,30 @@
 
             data['lanrsvp-event-type'] = $('input[name=lanrsvp-event-type]:checked', '.lanrsvp-event-form').val();
 
-            if (typeof(Storage) !== "undefined") {
-                var val = sessionStorage.getItem('seats');
-                if (val !== null) {
-                    data['lanrsvp-event-seatmap'] = JSON.parse(val);
+            if (data['lanrsvp-event-type'] === 'seatmap' && window.seats !== undefined) {
+                // Crop the seats which are outside the limits
+                var foundSeat = false;
+                for (var row = 0; row < window.seats.length; row++) {
+                    if (window.seatmapRowSize < row + 1) {
+                        delete window.seats[row];
+                    } else if (window.seats[row] !== undefined) {
+                        for (var col = 0; col < window.seats[row].length; col++) {
+                            if (window.seatmapColSize < col + 1) {
+                                delete window.seats[row][col];
+                            }
+                            if (window.seats[row][col] !== undefined) {
+                                foundSeat = true;
+                            }
+                        }
+                    }
                 }
+
+                if (!foundSeat) {
+                    alert("No seats defined!");
+                    return;
+                }
+
+                data['lanrsvp-event-seatmap'] = window.seats;
             }
 
             $.post( ajaxurl, data, function(response) {
