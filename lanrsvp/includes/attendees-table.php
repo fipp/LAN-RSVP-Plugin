@@ -6,7 +6,7 @@ class Attendees_Table extends WP_List_Table_Copy {
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
      */
-    function __construct($event_id, $admin = false, $has_seatmap = false) {
+    function __construct($attendees, $admin = false, $has_seatmap = false) {
         parent::__construct( array(
             'singular'=> 'wp_list_text_link', // Singular label
             'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
@@ -14,10 +14,6 @@ class Attendees_Table extends WP_List_Table_Copy {
             'screen' => 'interval-list' // hook suffix
         ) );
 
-        $attendees = DB::get_attendees($event_id);
-        foreach ($attendees as $key => $val) {
-            $attendees[$key] = get_object_vars($val);
-        }
         $this->attendees = $attendees;
         $this->isAdmin = $admin;
         $this->has_seatmap = $has_seatmap;

@@ -338,16 +338,21 @@ class LanRsvp {
                 $event = get_object_vars($event[0]);
                 $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
 
+                $seats = [];
+                $seats_count = 0;
                 if ($has_seatmap) {
                     wp_enqueue_script($this->plugin_slug . '-seatmap-script');
                     wp_enqueue_style($this->plugin_slug .'-fontawesome');
                     wp_enqueue_style($this->plugin_slug .'-common-styles');
 
+                    $seats = DB::get_event_seatmap($event_id);
+                    $seats_count = count($seats);
+
                     $seatmap_data = [
                         'event_id'        => $event_id,
                         'isAdmin'         => false,
                         'isAuthenticated' => false,
-                        'seats'           => DB::get_event_seatmap($event_id),
+                        'seats'           => $seats,
                         'ajaxurl'         => admin_url('admin-ajax.php')
                     ];
 
@@ -359,7 +364,12 @@ class LanRsvp {
 
                 }
 
-                $attendeesTable = new Attendees_Table($event_id, $is_admin = false, $has_seatmap);
+                $attendees = DB::get_attendees($event_id);
+                $attendees_count = count($attendees);
+                foreach ($attendees as $key => $val) {
+                    $attendees[$key] = get_object_vars($val);
+                }
+                $attendeesTable = new Attendees_Table($attendees, $is_admin = false, $has_seatmap);
                 include_once('views/event.php');
                 return;
             } else {
@@ -386,34 +396,6 @@ class LanRsvp {
     );
     */
 
-
-    function getAttendeesTable ( $event_id ) {
-        $attendees = DB::get_attendees($event_id);
-
-        $html = '<table>';
-        if ( isset( $attendees ) && is_array( $attendees) && count ( $attendees ) > 0 ) {
-
-            $html .= '<tr>';
-            foreach ($attendees[0] as $key => $attribute) {
-                $html .= "<th>$key</th>";
-            }
-            $html .= '</tr>';
-
-            foreach ($attendees as $attendee) {
-                $html .= '<tr>';
-                foreach ($attendee as $attribute) {
-                    $html .= "<td>$attribute</td>";
-                }
-                $html .= '</tr>';
-            }
-        } else {
-            $html .= "<tr>No attendees was found for event '$event_id'</tr>";
-        }
-
-        $html .= '</table>';
-
-        return $html;
-    }
 
     function getLoginForm ($message = null) {
         $ajax_url = admin_url('admin-ajax.php');

@@ -81,7 +81,7 @@
                 cols = 4;
             }
 
-            return [rows + 1, cols + 1];
+            return [rows + 2, cols + 2];
         }
 
         function drawGrid (rows, columns) {
