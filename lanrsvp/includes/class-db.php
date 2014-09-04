@@ -21,8 +21,9 @@ class DB {
 
         $user_sql = sprintf("CREATE TABLE %s (
                 user_id MEDIUMINT NOT NULL AUTO_INCREMENT,
+                first_name VARCHAR(32) NOT NULL,
+                last_name VARCHAR(32) NOT NULL,
                 email VARCHAR(128) NOT NULL UNIQUE,
-                full_name VARCHAR(64) NOT NULL,
                 password CHAR(32) NOT NULL,
                 registration_date TIMESTAMP DEFAULT NOW(),
                 activation_key CHAR(32) NOT NULL UNIQUE,
@@ -90,6 +91,56 @@ class DB {
         $wpdb->query(sprintf("DROP TABLE IF EXISTS %s", $wpdb->prefix . self::USER_TABLE_NAME));
     }
 
+    public static function create_user ($user) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $existing = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM wp_lanrsvp_user WHERE email = %s",
+                $user['email']),
+            ARRAY_A
+        );
+
+        if ($existing['COUNT(*)'] > 0) {
+            return "The user already exists.";
+        }
+
+        $data = [
+            'first_name' => $user['firstName'],
+            'last_name' =>  $user['lastName'],
+            'email' =>  $user['email'],
+            'password' => wp_hash_password($user['password']),
+            'activation_key' => md5($user['email'] . time())
+        ];
+
+        $wpdb->insert($wpdb->prefix . self::USER_TABLE_NAME, $data, array('%s', '%s', '%s', '%s'));
+
+        return $wpdb->last_error;
+    }
+
+    public static function activate_user($user) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $res = $wpdb->update(
+            $wpdb->prefix . self::USER_TABLE_NAME,
+            array('is_activated' => '1'),
+            array(
+                'email' => $user['email'],
+                'activation_key' => $user['activationCode']
+            ),
+            array('%s'),
+            array('%s', '%s')
+        );
+
+        if ($res == false || $res == 0) {
+            return "Activation failed.";
+        }
+
+        return $wpdb->last_error;
+    }
+
     public static function get_attendees($event_id) {
         if (!isset($event_id)) {
             return null;
@@ -104,7 +155,7 @@ class DB {
         return $wpdb->get_results($wpdb->prepare(
             "SELECT
               a.user_id,
-              b.full_name,
+              CONCAT(b.first_name, ' ', b.last_name) AS full_name,
               b.email,
               c.seat_row,
               c.seat_column,

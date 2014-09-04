@@ -76,6 +76,13 @@ class LanRsvp {
         // AJAX login
         add_action('wp_ajax_login', array( $this, 'ajaxLogin'));
         add_action('wp_ajax_nopriv_login', array( $this, 'ajaxLogin'));
+
+        add_action('wp_ajax_register', array( $this, 'register'));
+        add_action('wp_ajax_nopriv_register', array( $this, 'register'));
+
+        add_action('wp_ajax_activate_user', array( $this, 'activate_user'));
+        add_action('wp_ajax_nopriv_activate_user', array( $this, 'activate_user'));
+
         add_action('wp_ajax_nopriv_get_attendee', array( $this, 'get_attendee' ) );
     }
 
@@ -285,14 +292,13 @@ class LanRsvp {
      * @since    1.0.0
      */
     public function register_scripts() {
-        /*
+
         wp_register_script(
-            $this->plugin_slug . '-plugin-script',
+            $this->plugin_slug . '-public-script',
             plugins_url( 'assets/js/lanrsvp.js', __FILE__ ),
             array( 'jquery' ),
             self::VERSION
         );
-        */
 
         wp_register_script(
             $this->plugin_slug . '-seatmap-script',
@@ -333,7 +339,7 @@ class LanRsvp {
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
-            if (is_array($event) && is_object($event[0])) {
+            if (is_array($event) && count($event) == 1 && is_object($event[0])) {
 
                 $event = get_object_vars($event[0]);
                 $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
@@ -341,9 +347,16 @@ class LanRsvp {
                 $seats = [];
                 $seats_count = 0;
                 if ($has_seatmap) {
+                    wp_enqueue_script($this->plugin_slug . '-public-script');
                     wp_enqueue_script($this->plugin_slug . '-seatmap-script');
                     wp_enqueue_style($this->plugin_slug .'-fontawesome');
                     wp_enqueue_style($this->plugin_slug .'-common-styles');
+
+                    wp_localize_script(
+                        $this->plugin_slug . '-public-script',
+                        'LanRsvp',
+                        array('ajaxurl' => admin_url('admin-ajax.php'))
+                    );
 
                     $seats = DB::get_event_seatmap($event_id);
                     $seats_count = count($seats);
@@ -352,8 +365,7 @@ class LanRsvp {
                         'event_id'        => $event_id,
                         'isAdmin'         => false,
                         'isAuthenticated' => false,
-                        'seats'           => $seats,
-                        'ajaxurl'         => admin_url('admin-ajax.php')
+                        'seats'           => $seats
                     ];
 
                     wp_localize_script(
@@ -373,58 +385,11 @@ class LanRsvp {
                 include_once('views/event.php');
                 return;
             } else {
-                return "LAN RSVP Plugin:<br />event id $event_id is not valid<br />";
+                return "<h1>LAN RSVP Plugin</h1><p>Specified event id $event_id is not valid.</p>";
             }
         } else {
-            return 'LAN RSVP Plugin:<br />Could not recognize shortcode.<br />Valid example: [lanrsvp event_id="12"]<br />';
+            return '<h1>LAN RSVP Plugin:<p>Could not recognize shortcode. Valid example: [lanrsvp event_id="12"].</p>';
         }
-    }
-
-    /*
-    $event = DB::get_event($event_id);
-    if (isset($title)) {
-        $html = sprintf(
-            "<h1>%s</h1>",
-            $event[0]->{'event_title'}
-        );
-    }
-    $html .= sprintf(
-        "<ul><li>From date: %s</li><li>To date: %s</li><li>Seats available: %s</li></ul>",
-        $event[0]->{'from_date'},
-        $event[0]->{'to_date'},
-        $event[0]->{'seats_available'} || 'Unlimited'
-    );
-    */
-
-
-    function getLoginForm ($message = null) {
-        $ajax_url = admin_url('admin-ajax.php');
-
-        if ( isset($message) ) {
-            $message = "<tr><td colspan='2' class='red'>$message</td></tr>";
-        }
-
-        return <<<HTML
-<div class="lanrsvp">
-    <script type="text/javascript">
-        var ajaxUrl = "{$ajax_url}";
-    </script>
-    <form class="lanrsvp-login">
-        <table>
-            <tr><td>E-mail:</td><td><input type="email" required value="test@test.com" /></td></tr>
-            <tr><td>Password:</td><td><input type="password" required value="testpassword" /></td></tr>
-            {$message}
-            <tr><td colspan="2"><input type="submit" value="Log in" /></td></tr>
-            <tr>
-                <td colspan="2">
-                    <a href="#" class="forgotPassword">Forgot password</a> -
-                    <a href="#" class="registerNewUser">Register new user</a>
-                </td>
-            </tr>
-        </table>
-    </form>
-</div>
-HTML;
     }
 
     function ajaxLogin() {
@@ -460,9 +425,19 @@ HTML;
         if ( $is_correct ) {
             echo "You're logged in!";
         } else {
-            echo $this->getLoginForm("Wrong email and/or password!");
+            echo "Wrong email and/or password!";
         }
 
+        die();
+    }
+
+    function register() {
+        echo DB::create_user($_REQUEST);
+        die();
+    }
+
+    function activate_user() {
+        echo DB::activate_user($_REQUEST);
         die();
     }
 
