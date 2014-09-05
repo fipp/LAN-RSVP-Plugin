@@ -41,7 +41,7 @@ class DB {
                 end_date DATETIME,
                 min_attendees SMALLINT NOT NULL,
                 max_attendees SMALLINT NOT NULL,
-                has_seatmap TINYINT(1) NOT NULL,
+                has_seatmap ENUM('0','1') NOT NULL,
                 PRIMARY KEY  (event_id)
             );",
             $wpdb->prefix . self::EVENT_TABLE_NAME
@@ -114,7 +114,7 @@ class DB {
             'activation_code' => $user['activation_code']
         ];
 
-        $wpdb->insert($wpdb->prefix . self::USER_TABLE_NAME, $data, array('%s', '%s', '%s', '%s'));
+        $wpdb->insert($wpdb->prefix . self::USER_TABLE_NAME, $data, array('%s', '%s', '%s', '%s', '%s'));
 
         if (!is_numeric($wpdb->insert_id)) {
             $errorMessage = "A new user could not be created! Please contact the system administrator.";
@@ -167,7 +167,7 @@ class DB {
               $attendee_table_name a
               JOIN $user_table_name b ON (a.user_id = b.user_id)
               JOIN $seat_table_name c ON (a.event_id = c.event_id AND a.user_id = c.user_id)
-             WHERE a.event_id = %s",
+             WHERE a.event_id = %d",
             $event_id
         ));
     }
@@ -183,7 +183,7 @@ class DB {
         return $wpdb->get_results($wpdb->prepare(
             "SELECT *
               FROM wp_lanrsvp_attendee a JOIN wp_lanrsvp_user b ON a.user_id = b.user_id
-              WHERE a.event_id = %s AND a.user_id = %s",
+              WHERE a.event_id = %d AND a.user_id = %d",
             $event_id,
             $user_id
         ));
@@ -199,7 +199,7 @@ class DB {
 
         $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $event_table_name WHERE event_id = %s",
+            "SELECT * FROM $event_table_name WHERE event_id = %d",
             $event_id
         ));
     }
@@ -214,7 +214,7 @@ class DB {
 
         $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $seat_table_name WHERE event_id = %s",
+            "SELECT * FROM $seat_table_name WHERE event_id = %d",
             $event_id
         ));
     }
@@ -245,6 +245,24 @@ class DB {
         return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name");
     }
 
+    public static function get_user($user_id = null, $email = null) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $user_table = $wpdb->prefix . self::USER_TABLE_NAME;
+        if (isset($user_id)) {
+            return $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $user_table WHERE user_id = %d",
+                $user_id
+            ), ARRAY_A);
+        } elseif (isset($email)) {
+            return $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $user_table WHERE email = %s",
+                $email
+            ), ARRAY_A);
+        }
+    }
+
     public static function get_password_hash($user_id = null, $email = null) {
         /** @var $wpdb WPDB */
         global $wpdb;
@@ -254,7 +272,7 @@ class DB {
 
         if (isset($user_id)) {
             $sql = $wpdb->prepare(
-                "SELECT password FROM $table_name WHERE user_id = %s AND is_activated = '1'",
+                "SELECT password FROM $table_name WHERE user_id = %d AND is_activated = '1'",
                 $user_id
             );
         } elseif (isset($email)) {
@@ -265,6 +283,37 @@ class DB {
         }
 
         return $wpdb->get_results($sql);
+    }
+
+    public static function set_password ($user_id = null, $email = null, $newPassword) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $res = false;
+        if (isset($user_id)) {
+            $res = $wpdb->update(
+                $wpdb->prefix . self::USER_TABLE_NAME,
+                array('password' => wp_hash_password($newPassword)),
+                array('user_id' => $user_id),
+                array('%s'),
+                array('%d')
+            );
+        } elseif (isset($email)) {
+            $res = $wpdb->update(
+                $wpdb->prefix . self::USER_TABLE_NAME,
+                array('password' => wp_hash_password($newPassword)),
+                array('email' => $email),
+                array('%s'),
+                array('%s')
+            );
+        }
+
+        if ($res == false || $res == 0) {
+            $errorMessage = "Reset password request failed. Please contact the system administrator.";
+            throw new Exception($errorMessage);
+        }
+
+        return $res;
     }
 
     public static function create_event($event) {
@@ -278,11 +327,11 @@ class DB {
         try {
             $type = $e['lanrsvp-event-type'];
 
-            $format = array('%s', '%s', '%d', '%d');
+            $format = array('%s', '%s', '%s', '%d');
             $data = array(
                 'event_title' => $e['lanrsvp-event-title'],
                 'start_date' => $e['lanrsvp-event-startdate'],
-                'has_seatmap' => ($type == 'seatmap' ? 1 : 0),
+                'has_seatmap' => ($type == 'seatmap' ? '1' : '0'),
                 'min_attendees' => intval($e['lanrsvp-event-minattendees']),
             );
 

@@ -78,6 +78,9 @@ class LanRsvp {
         add_action('wp_ajax_login', array( $this, 'login'));
         add_action('wp_ajax_nopriv_login', array( $this, 'login'));
 
+        add_action('wp_ajax_reset_password', array( $this, 'reset_password'));
+        add_action('wp_ajax_nopriv_reset_password', array( $this, 'reset_password'));
+
         add_action('wp_ajax_register', array( $this, 'register'));
         add_action('wp_ajax_nopriv_register', array( $this, 'register'));
 
@@ -440,6 +443,49 @@ class LanRsvp {
         die();
     }
 
+    function reset_password() {
+        try {
+            $_REQUEST = self::checkAndTrimParams(['email'], $_REQUEST);
+
+            $email = $_REQUEST['email'];
+            $user = DB::get_user(null, $email);
+            if (!is_array($user)) {
+                throw new Exception("The user could not be found. Please provide an existing email address.");
+            }
+
+            if ($user['is_activated'] != '1') {
+                throw new Exception("The user is not activated. Please activate your account first.");
+            }
+
+            $firstName = $user['first_name'];
+            $lastName = $user['last_name'];
+
+            $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            $newPassword = substr(str_shuffle($chars),0,8);
+
+            if (DB::set_password(null, $_REQUEST['email'], $newPassword) == 1) {
+                $subject = "LAN RSVP Plugin - Your new password";
+                $site_url = site_url();
+                $message = <<<HTML
+Dear $firstName $lastName!
+
+Someone (hopefully you - $email) requested a new password for this LAN RSVP system account on $site_url.
+
+The new password is: $newPassword
+
+Please note that this password is encrypted in our database, and not stored as clear text.
+
+Best Regards,
+The LAN RSVP Plugin, on behalf of $site_url.
+HTML;
+                wp_mail( $email, $subject, $message );
+            }
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+        die();
+    }
+
     public function register() {
         try {
             $_REQUEST = self::checkAndTrimParams(
@@ -465,7 +511,7 @@ class LanRsvp {
             $_REQUEST['activation_code'] = $activation_code;
             DB::create_user($_REQUEST);
 
-            $subject = "Your activation code";
+            $subject = "LAN RSVP Plugin - Your activation code";
             $site_url = site_url();
             $message = <<<HTML
 Dear $firstName $lastName!

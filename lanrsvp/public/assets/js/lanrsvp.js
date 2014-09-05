@@ -58,7 +58,8 @@
                 if (response.length > 0) {
                     $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
                 } else {
-                    $('div.lanrsvp-user > form').hide('fast');
+                    $('div.lanrsvp-user').hide('fast');
+                    $('div.lanrsvp-actions').show('fast');
                 }
             });
         }
@@ -70,7 +71,14 @@
             };
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
-                alert(response);
+                if (response.length > 0) {
+                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                } else {
+                    var html = "<p>Please check your email to get your new password..</p>";
+                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(html);
+                    $('div.lanrsvp-user > form').hide('fast');
+                    $('form.lanrsvp-login-form').show('fast');
+                }
             });
         }
 
