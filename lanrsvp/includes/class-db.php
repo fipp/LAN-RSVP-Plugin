@@ -24,9 +24,9 @@ class DB {
                 first_name VARCHAR(32) NOT NULL,
                 last_name VARCHAR(32) NOT NULL,
                 email VARCHAR(128) NOT NULL UNIQUE,
-                password CHAR(32) NOT NULL,
+                password CHAR(48) NOT NULL,
                 registration_date TIMESTAMP DEFAULT NOW(),
-                activation_key CHAR(32) NOT NULL UNIQUE,
+                activation_code CHAR(32) NOT NULL UNIQUE,
                 is_activated ENUM('0','1') NOT NULL DEFAULT '0',
                 PRIMARY KEY  (user_id)
             );",
@@ -111,12 +111,15 @@ class DB {
             'last_name' =>  $user['lastName'],
             'email' =>  $user['email'],
             'password' => wp_hash_password($user['password']),
-            'activation_key' => md5($user['email'] . time())
+            'activation_code' => $user['activation_code']
         ];
 
         $wpdb->insert($wpdb->prefix . self::USER_TABLE_NAME, $data, array('%s', '%s', '%s', '%s'));
 
-        return $wpdb->last_error;
+        if (!is_numeric($wpdb->insert_id)) {
+            $errorMessage = "A new user could not be created! Please contact the system administrator.";
+            throw new Exception($errorMessage);
+        }
     }
 
     public static function activate_user($user) {
@@ -128,17 +131,17 @@ class DB {
             array('is_activated' => '1'),
             array(
                 'email' => $user['email'],
-                'activation_key' => $user['activationCode']
+                'activation_code' => $user['activationCode']
             ),
             array('%s'),
             array('%s', '%s')
         );
 
         if ($res == false || $res == 0) {
-            return "Activation failed.";
+            $errorMessage = "Activation failed. Did you enter the correct code? If so, please contact the system administrator.";
+            throw new Exception($errorMessage);
         }
 
-        return $wpdb->last_error;
     }
 
     public static function get_attendees($event_id) {
@@ -243,27 +246,20 @@ class DB {
     }
 
     public static function get_password_hash($user_id = null, $email = null) {
-        if (!isset($user_id) && !isset($email)) {
-            return null;
-        }
-
-        if (isset($user_id) && isset($email)) {
-            return null;
-        }
-
         /** @var $wpdb WPDB */
         global $wpdb;
 
         $sql = '';
         $table_name = $wpdb->prefix . self::USER_TABLE_NAME;
+
         if (isset($user_id)) {
             $sql = $wpdb->prepare(
-                "SELECT password FROM $table_name WHERE user_id = %s",
+                "SELECT password FROM $table_name WHERE user_id = %s AND is_activated = '1'",
                 $user_id
             );
         } elseif (isset($email)) {
             $sql = $wpdb->prepare(
-                "SELECT password FROM $table_name WHERE email = %s",
+                "SELECT password FROM $table_name WHERE email = %s AND is_activated = '1'",
                 $email
             );
         }
@@ -300,7 +296,7 @@ class DB {
                 array_push($format, '%s');
             }
 
-            $event_id;
+            $event_id = '';
             if (isset($e['lanrsvp-event-id']) && is_numeric($e['lanrsvp-event-id'])) {
                 $event_id = intval($e['lanrsvp-event-id']);
                 $wpdb->update(

@@ -55,7 +55,11 @@
             };
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
-                alert(response);
+                if (response.length > 0) {
+                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                } else {
+                    $('div.lanrsvp-user > form').hide('fast');
+                }
             });
         }
 

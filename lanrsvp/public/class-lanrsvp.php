@@ -62,6 +62,7 @@ class LanRsvp {
 
         // Load plugin text domain
         add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
+        add_action( 'init', array( $this, 'startSession' ) );
 
         // Activate plugin when new blog is added
         add_action( 'wpmu_new_blog', array( $this, 'activate_new_site' ) );
@@ -73,9 +74,9 @@ class LanRsvp {
 
         add_shortcode( 'lanrsvp', array( $this, 'shortcode_handler_lanrsvp' ) );
 
-        // AJAX login
-        add_action('wp_ajax_login', array( $this, 'ajaxLogin'));
-        add_action('wp_ajax_nopriv_login', array( $this, 'ajaxLogin'));
+        // AJAX login, register, activate, and forgot password
+        add_action('wp_ajax_login', array( $this, 'login'));
+        add_action('wp_ajax_nopriv_login', array( $this, 'login'));
 
         add_action('wp_ajax_register', array( $this, 'register'));
         add_action('wp_ajax_nopriv_register', array( $this, 'register'));
@@ -83,6 +84,7 @@ class LanRsvp {
         add_action('wp_ajax_activate_user', array( $this, 'activate_user'));
         add_action('wp_ajax_nopriv_activate_user', array( $this, 'activate_user'));
 
+        add_action('wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
         add_action('wp_ajax_nopriv_get_attendee', array( $this, 'get_attendee' ) );
     }
 
@@ -266,6 +268,19 @@ class LanRsvp {
     }
 
     /**
+     * Starts a session
+     *
+     * @since    1.0.0
+     */
+    public function startSession() {
+
+        if (!session_id()) {
+            session_start();
+        }
+
+    }
+
+    /**
      * Register public-facing style sheets.
      *
      * @since    1.0.0
@@ -336,6 +351,7 @@ class LanRsvp {
     }
 
     function shortcode_handler_lanrsvp ( $attrs ) {
+
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
@@ -382,6 +398,9 @@ class LanRsvp {
                     $attendees[$key] = get_object_vars($val);
                 }
                 $attendeesTable = new Attendees_Table($attendees, $is_admin = false, $has_seatmap);
+
+                $isLoggedIn = session_id() && isset($_SESSION['lanrsvp-isloggedin']);
+
                 include_once('views/event.php');
                 return;
             } else {
@@ -392,53 +411,111 @@ class LanRsvp {
         }
     }
 
-    function ajaxLogin() {
-        /** @var $wpdb WPDB */
-        global $wpdb;
+    function login() {
+        try {
+            $_REQUEST = self::checkAndTrimParams(['email', 'password'], $_REQUEST);
 
-        // get the HTTP parameters
-        $email = $_REQUEST['email'];
-        $password_plain = $_REQUEST['password'];
-        $password_hash = null; // to be set
+            $email = $_REQUEST['email'];
+            $password_plain = $_REQUEST['password'];
 
-        // this variable will determine what we output at the end
-        $is_correct = false;
+            $password_hash = null;
 
-        // get $password_hash for $email
-        $res = DB::get_password_hash(null,$email);
-        if (isset( $res[0]->{'password'} )) {
+            $res = DB::get_password_hash(null,$email);
+            $errorMessage = "Wrong email/password, or the account is not activated (check your email). <br /> Try again or contact the system administrator";
+            if (!isset( $res[0]->{'password'} )) {
+                throw new Exception($errorMessage);
+            }
+
             $password_hash = $res[0]->{'password'};
+
+            $wp_hasher = new PasswordHash(8, TRUE);
+            if ( !$wp_hasher->CheckPassword( $password_plain, $password_hash )) {
+                throw new Exception($errorMessage);
+            }
+
+            $_SESSION['lanrsvp-isloggedin'] = $email;
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+        die();
+    }
+
+    public function register() {
+        try {
+            $_REQUEST = self::checkAndTrimParams(
+                ['firstName', 'lastName', 'email', 'emailConfirm', 'password', 'passwordConfirm'],
+                $_REQUEST
+            );
+
+            if ($_REQUEST['email'] != $_REQUEST['emailConfirm']) {
+                $errorMsg = "The email addresses do not match! Try again or contact the system administrator";
+                throw new Exception($errorMsg);
+            }
+
+            if ($_REQUEST['password'] != $_REQUEST['passwordConfirm']) {
+                $errorMsg = "The email addresses do not match! Try again or contact the system administrator";
+                throw new Exception($errorMsg);
+            }
+
+            $firstName = $_REQUEST['firstName'];
+            $lastName = $_REQUEST['lastName'];
+            $email = $_REQUEST['email'];
+
+            $activation_code = md5($email . time());
+            $_REQUEST['activation_code'] = $activation_code;
+            DB::create_user($_REQUEST);
+
+            $subject = "Your activation code";
+            $site_url = site_url();
+            $message = <<<HTML
+Dear $firstName $lastName!
+
+Your email address ($email) has been used to register a new account for the LAN RSVP system on $site_url.
+
+If this was you, please activate your account by entering the following code at the page where you registered:
+
+$activation_code
+
+If this was not you, you can safely disregard this message, the account will not be usable.
+
+Best Regards,
+The LAN RSVP Plugin, on behalf of $site_url.
+HTML;
+            wp_mail( $email, $subject, $message );
+        } catch (Exception $e) {
+            echo $e->getMessage();
         }
 
-        // If $password_hash was set, check if MD5 of $password_plain resolves to it
-        if ( isset($password_hash)) {
-            $wp_hasher = new PasswordHash(8, TRUE);
-            if ( $wp_hasher->CheckPassword( $password_plain, $password_hash )) {
-                $is_correct = true;
+        die();
+    }
+
+    public function activate_user() {
+        try {
+            $_REQUEST = self::checkAndTrimParams(['email', 'activationCode'], $_REQUEST);
+            DB::activate_user($_REQUEST);
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+
+        die();
+    }
+
+    private static function checkAndTrimParams($parameterList, $source) {
+        foreach ($parameterList as $param) {
+            if (!isset($source[$param])) {
+                $errorMsg = "Parameter $param is not given! Try again or contact the system administrator";
+                throw new Exception($errorMsg);
+            }
+
+            $source[$param] = trim($source[$param]);
+
+            if (strlen($source[$param]) == 0) {
+                $errorMsg = "Parameter $param is empty! Try again or contact the system administrator";
+                throw new Exception($errorMsg);
             }
         }
 
-        /*
-         * Depending on the credentials, we either show the system or the login
-         * form again with error message.
-         */
-        if ( $is_correct ) {
-            echo "You're logged in!";
-        } else {
-            echo "Wrong email and/or password!";
-        }
-
-        die();
-    }
-
-    function register() {
-        echo DB::create_user($_REQUEST);
-        die();
-    }
-
-    function activate_user() {
-        echo DB::activate_user($_REQUEST);
-        die();
+        return $source;
     }
 
     public static function get_attendee() {

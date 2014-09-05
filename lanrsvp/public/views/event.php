@@ -44,8 +44,11 @@ echo <<<HTML
     <tr><td>Places left</td><td>{$places_left}</td></tr>
     <tr><td>Has seatmap</td><td>{$has_seatmap_text}</td></tr>
 </table>
+HTML;
 
-<h2>Log in to register/change/deregister</h2>
+if (!$isLoggedIn) {
+echo <<<HTML
+   <h2>Log in to register/change/deregister</h2>
 <div class="lanrsvp-user">
     <div class="lanrsvp-user-message"></div>
     <form class="lanrsvp-login-form">
@@ -110,6 +113,7 @@ echo <<<HTML
 
 </div>
 HTML;
+}
 
 if ($has_seatmap) {
     echo "<h2>Seat map</h2>";
