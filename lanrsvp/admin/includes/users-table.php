@@ -13,9 +13,6 @@ class Users_Table extends WP_List_Table_Copy {
         ) );
 
         $users = DB::get_users();
-        foreach ($users as $key => $val) {
-            $users[$key] = get_object_vars($val);
-        }
         $this->users = $users;
 
     }

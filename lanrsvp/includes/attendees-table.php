@@ -117,11 +117,13 @@ class Attendees_Table extends WP_List_Table_Copy {
     function column_default( $item, $column_name ) {
         switch( $column_name ) {
             case 'user_id':
-            case 'full_name':
             case 'email':
             case 'seat_row':
             case 'seat_column':
                 return $item[ $column_name ];
+            case 'full_name':
+                return $item['first_name'] . ' ' .$item['last_name'];
+                break;
             case 'registration_date';
                 $timestamp = strtotime( $item[ $column_name ] );
                 return date( 'D d.m, H:i', $timestamp );

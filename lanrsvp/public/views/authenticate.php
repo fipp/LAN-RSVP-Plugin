@@ -1,6 +1,16 @@
-<div class="lanrsvp-login" style="display:none">
-    <div class="lanrsvp-user-message"></div>
-    <form class="lanrsvp-login-form">
+<?php
+$display = $is_authenticated ? 'none' : 'block';
+?>
+
+<div id="lanrsvp-authenticate" style="display:<?php echo $display; ?>;">
+	<h2 class="lanrsvp-authenticate-title">Log in</h2>
+	<p>To register or change your registration, you have to log in in using your LAN RSVP System account:</p>
+
+	<button id="showLoginForm">Log in</button>
+
+    <div class="lanrsvp-authenticate-message"></div>
+
+    <form class="lanrsvp-login-form" style="display:none;">
         <table>
             <tr><td>E-mail:</td><td><input type="email" name="email" required /></td></tr>
             <tr><td>Password:</td><td><input type="password" name="password" required /></td></tr>

@@ -11,7 +11,7 @@
 
         var canvas; // To be set by drawGrid()
         var context; // To be set by drawGrid()
-        var cellSize = 30; // How many pixels * pixels each seat cell should be
+        var cellSize = 20; // How many pixels * pixels each seat cell should be
 
         var seats = getStoredSeatmap(); // Array holding the status for all seats
         window.seats = seats;
@@ -21,6 +21,8 @@
         window.seatmapColSize = mapSize[1]; // Initial columns of rows for the seat map
         $('input[name="lanrsvp-seatmap-cols"]').val(mapSize[1]);
 
+        var canEdit = seatmap_data.canEdit;
+        var isAdmin = seatmap_data.isAdmin;
 
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
         var paintedOnMouseDown = Array(); // Array to keep track of which seats are painted on each mousedown
@@ -81,7 +83,7 @@
                 cols = 4;
             }
 
-            return [rows + 2, cols + 2];
+            return [rows + 1, cols + 1];
         }
 
         function drawGrid (rows, columns) {
@@ -90,7 +92,7 @@
 
             writeDebug('drawGrid: gridWidth ' + gridWidth + ', gridHeight ' + gridHeight);
 
-            canvas = $('#lanrsvp-seatmap');
+            canvas = $('#lanrsvp-seatmap-map > canvas');
             canvas.attr({
                 width: gridWidth + 1, // + 1 for the border
                 height: gridHeight + 1
@@ -98,8 +100,10 @@
             canvas = canvas.get(0);
 
             canvas.addEventListener('mousemove', mouseMoveListener, false);
-            canvas.addEventListener('mousedown', mouseDownListener, false);
-            canvas.addEventListener('mouseup', mouseUpListener, false);
+            if (canEdit || isAdmin) {
+                canvas.addEventListener('mousedown', mouseDownListener, false);
+                canvas.addEventListener('mouseup', mouseUpListener, false);
+            }
 
             context = canvas.getContext("2d");
 
@@ -171,7 +175,7 @@
                         //writeDebug('hover: row ' + row + ', column ' + column);
                         setSeatStatus(currentRow,currentColumn);
 
-                        if (mouseIsDown && !refreshingCells) {
+                        if ((canEdit || isAdmin) && mouseIsDown && !refreshingCells) {
                             if (toggleSeatStatus(currentRow, currentColumn)) {
                                 paintSeat(currentRow, currentColumn);
                             }

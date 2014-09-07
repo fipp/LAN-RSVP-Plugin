@@ -3,48 +3,56 @@
 
 	$(function () {
 
-        $('a.logIn').click(function(e) {
-            e.preventDefault();
-            $('div.lanrsvp-user > form').hide('fast');
-            $('form.lanrsvp-login-form').show('fast');
+        $('button#showLoginForm').click(function() {
+            $(this).hide();
+            $('form.lanrsvp-login-form').show();
         });
 
-        $('a.resetPassword').click(function(e) {
+        $('div#lanrsvp-authenticate a').click(function(e) {
             e.preventDefault();
-            $('div.lanrsvp-user > form').hide('fast');
-            $('form.lanrsvp-resetpassword-form').show('fast');
+            var className = $(this).attr('class');
+            $('div#lanrsvp-authenticate > form').hide();
+            switch (className) {
+                case 'logIn':
+                    $('h2.lanrsvp-authenticate-title').text('Log in');
+                    $('form.lanrsvp-login-form').show();
+                    break;
+                case 'resetPassword':
+                    $('h2.lanrsvp-authenticate-title').text('Reset password');
+                    $('form.lanrsvp-resetpassword-form').show();
+                    break;
+                case 'register':
+                    $('h2.lanrsvp-authenticate-title').text('Register new user');
+                    $('form.lanrsvp-register-form').show();
+                    break;
+                case 'activate':
+                    $('h2.lanrsvp-authenticate-title').text('Activate account');
+                    $('form.lanrsvp-activate-form').show();
+                    break;
+            }
         });
 
-        $('a.register').click(function(e) {
+        $('div#lanrsvp-authenticate form').submit(function(e) {
             e.preventDefault();
-            $('div.lanrsvp-user > form').hide('fast');
-            $('form.lanrsvp-register-form').show('fast');
+            var className = $(this).attr('class');
+            switch (className) {
+                case 'lanrsvp-login-form':
+                    doLogin($(this));
+                    break;
+                case 'lanrsvp-resetpassword-form':
+                    doResetPassword($(this));
+                    break;
+                case 'lanrsvp-register-form':
+                    doRegister($(this));
+                    break;
+                case 'lanrsvp-activate-form':
+                    doActivate($(this));
+                    break;
+            }
         });
 
-        $('a.activate').click(function(e) {
-            e.preventDefault();
-            $('div.lanrsvp-user > form').hide('fast');
-            $('form.lanrsvp-activate-form').show('fast');
-        });
+        $('button.signUp').click(function() {
 
-        $('form.lanrsvp-login-form').submit(function(e) {
-            e.preventDefault();
-            doLogin($(this));
-        });
-
-        $('form.lanrsvp-resetpassword-form').submit(function(e) {
-            e.preventDefault();
-            doResetPassword($(this));
-        });
-
-        $('form.lanrsvp-register-form').submit(function(e) {
-            e.preventDefault();
-            doRegister($(this));
-        });
-
-        $('form.lanrsvp-activate-form').submit(function(e) {
-            e.preventDefault();
-            doActivate($(this));
         });
 
         function doLogin(form) {
@@ -56,10 +64,19 @@
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
                 if (response.length > 0) {
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                    $('div.lanrsvp-authenticate-message').html(response);
                 } else {
-                    $('div.lanrsvp-user').hide('fast');
-                    $('div.lanrsvp-actions').show('fast');
+                    $('div#lanrsvp-authenticate').hide();
+
+                    data = {
+                        action: 'get_authenticated',
+                        event_id : LanRsvp.event_id
+                    };
+
+                    $.post( LanRsvp.ajaxurl, data, function(reponse) {
+                        $('div#lanrsvp-authenticated').html(response);
+                        $('div#lanrsvp-authenticated').show();
+                    });
                 }
             });
         }
@@ -72,12 +89,12 @@
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
                 if (response.length > 0) {
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                    $('div.lanrsvp-authenticate-message').html(response);
                 } else {
-                    var html = "<p>Please check your email to get your new password..</p>";
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(html);
-                    $('div.lanrsvp-user > form').hide('fast');
-                    $('form.lanrsvp-login-form').show('fast');
+                    var html = "<p>Registration successful. Check your e-mail account to activate your account.</p>";
+                    $('div.lanrsvp-authenticate-message').html(html);
+                    $('div#lanrsvp-authenticate > form').hide();
+                    $('form.lanrsvp-login-form').show();
                 }
             });
         }
@@ -112,12 +129,12 @@
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
                 if (response.length > 0) {
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                    $('div.lanrsvp-authenticate-message').html(response);
                 } else {
                     var html = "<p>Registration successful. Check your e-mail account to activate your account.</p>";
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(html);
-                    $('div.lanrsvp-user > form').hide('fast');
-                    $('form.lanrsvp-activate-form').show('fast');
+                    $('div.lanrsvp-authenticate-message').html(html);
+                    $('div#lanrsvp-authenticate > form').hide();
+                    $('form.lanrsvp-login-form').show();
                 }
             });
         }
@@ -131,28 +148,18 @@
 
             $.post( LanRsvp.ajaxurl, data, function(response) {
                 if (response.length > 0) {
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(response);
+                    $('div.lanrsvp-authenticate-message').html(response);
                 } else {
                     var html = "<p>Activation successful. Please log in.</p>";
-                    $('div.lanrsvp-user > div.lanrsvp-user-message').html(html);
-                    $('div.lanrsvp-user > form').hide('fast');
-                    $('form.lanrsvp-login-form').show('fast');
+                    $('div.lanrsvp-authenticate-message').html(html);
+                    $('div#lanrsvp-authenticate > form').hide();
+                    $('form.lanrsvp-login-form').show();
                 }
             });
         }
 
+
+
     });
 
 }(jQuery));
-
-function doLogin (formElement) {
-    var ajaxParameters = {
-
-    };
-
-    jQuery.get( ajaxUrl, ajaxParameters, successHandler );
-}
-
-function successHandler (data) {
-    jQuery( ".lanrsvp" ).html( data );
-}

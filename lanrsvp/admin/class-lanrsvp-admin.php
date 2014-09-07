@@ -142,7 +142,7 @@ class LanRsvpAdmin {
 
             wp_enqueue_style(
                 $this->plugin_slug .'-common-styles',
-                plugins_url( '../assets/css/lanrsvp.css', __FILE__ ),
+                plugins_url( '../assets/css/lanrsvp-seatmap.css', __FILE__ ),
                 array(),
                 LanRsvpAdmin::VERSION
             );

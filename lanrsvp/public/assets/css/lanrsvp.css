@@ -1,5 +1,24 @@
-/* This stylesheet is used to style the public-facing components of the plugin. */
+#lanrsvp > div {
+    margin: 0 0 20px;
+}
 
-.lanrsvp .red {
-    color : red;
+#lanrsvp h2 {
+    margin: 0 0 10px;
+}
+
+#lanrsvp p {
+    margin: 0 0 10px;
+}
+
+#lanrsvp table {
+    margin: 0px;
+}
+
+#lanrsvp-attendees .tablenav {
+    display: none;
+}
+
+#lanrsvp-attendees th a {
+    text-transform: none;
+    text-decoration: none;
 }

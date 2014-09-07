@@ -145,10 +145,6 @@ class DB {
     }
 
     public static function get_attendees($event_id) {
-        if (!isset($event_id)) {
-            return null;
-        }
-
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -158,7 +154,8 @@ class DB {
         return $wpdb->get_results($wpdb->prepare(
             "SELECT
               a.user_id,
-              CONCAT(b.first_name, ' ', b.last_name) AS full_name,
+              b.first_name,
+              b.last_name,
               b.email,
               c.seat_row,
               c.seat_column,
@@ -166,49 +163,37 @@ class DB {
              FROM
               $attendee_table_name a
               JOIN $user_table_name b ON (a.user_id = b.user_id)
-              JOIN $seat_table_name c ON (a.event_id = c.event_id AND a.user_id = c.user_id)
+              LEFT JOIN $seat_table_name c ON (a.event_id = c.event_id AND a.user_id = c.user_id)
              WHERE a.event_id = %d",
             $event_id
-        ));
+        ), ARRAY_A);
     }
 
     public static function get_attendee($event_id, $user_id) {
-        if (!isset($event_id) || !isset($user_id)) {
-            return null;
-        }
-
         /** @var $wpdb WPDB */
         global $wpdb;
 
-        return $wpdb->get_results($wpdb->prepare(
-            "SELECT *
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT a.user_id, b.first_name, b.last_name, b.email, a.event_id, a.registration_date
               FROM wp_lanrsvp_attendee a JOIN wp_lanrsvp_user b ON a.user_id = b.user_id
               WHERE a.event_id = %d AND a.user_id = %d",
             $event_id,
             $user_id
-        ));
+        ), ARRAY_A);
     }
 
     public static function get_event($event_id) {
-        if (!isset($event_id)) {
-            return null;
-        }
-
         /** @var $wpdb WPDB */
         global $wpdb;
 
         $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
-        return $wpdb->get_results($wpdb->prepare(
+        return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $event_table_name WHERE event_id = %d",
             $event_id
-        ));
+        ), ARRAY_A);
     }
 
     public static function get_event_seatmap($event_id) {
-        if (!isset($event_id)) {
-            return null;
-        }
-
         /** @var $wpdb WPDB */
         global $wpdb;
 
@@ -216,7 +201,7 @@ class DB {
         return $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM $seat_table_name WHERE event_id = %d",
             $event_id
-        ));
+        ), ARRAY_A);
     }
 
     public static function get_events() {
@@ -231,7 +216,8 @@ class DB {
               a.*,
               (SELECT COUNT(*) FROM $attendee_table_name WHERE event_id = a.event_id) AS 'attendees_registered'
             FROM
-              $event_table_name a;"
+              $event_table_name a;",
+            ARRAY_A
         );
 
         return $res;
@@ -242,7 +228,7 @@ class DB {
         global $wpdb;
 
         $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
-        return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name");
+        return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name", ARRAY_A);
     }
 
     public static function get_user($user_id = null, $email = null) {
@@ -261,28 +247,6 @@ class DB {
                 $email
             ), ARRAY_A);
         }
-    }
-
-    public static function get_password_hash($user_id = null, $email = null) {
-        /** @var $wpdb WPDB */
-        global $wpdb;
-
-        $sql = '';
-        $table_name = $wpdb->prefix . self::USER_TABLE_NAME;
-
-        if (isset($user_id)) {
-            $sql = $wpdb->prepare(
-                "SELECT password FROM $table_name WHERE user_id = %d AND is_activated = '1'",
-                $user_id
-            );
-        } elseif (isset($email)) {
-            $sql = $wpdb->prepare(
-                "SELECT password FROM $table_name WHERE email = %s AND is_activated = '1'",
-                $email
-            );
-        }
-
-        return $wpdb->get_results($sql);
     }
 
     public static function set_password ($user_id = null, $email = null, $newPassword) {
@@ -425,5 +389,47 @@ class DB {
             global $wpdb;
             $wpdb->delete($wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array('%d'));
         }
+    }
+
+    public static function get_attendees_count($event_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+        $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
+        $res = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $attendee_table_name WHERE event_id = %s",
+                array('event_id' => $event_id)
+            ),
+            ARRAY_A
+        );
+        return $res['COUNT(*)'];
+    }
+
+    public static function get_seats_count($event_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+        $res = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $seat_table_name WHERE event_id = %s",
+                array('event_id' => $event_id)
+            ),
+            ARRAY_A
+        );
+        return $res['COUNT(*)'];
+    }
+
+    public static function get_max_attendees($event_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+        $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
+        $res = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT max_attendees FROM $event_table_name WHERE event_id = %s",
+                array('event_id' => $event_id)
+            ),
+            ARRAY_A
+        );
+        return $res['max_attendees'];
     }
 }

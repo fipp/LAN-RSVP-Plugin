@@ -13,9 +13,16 @@ div#lanrsvp-seatmap-info table td {
     vertical-align: middle;
 }
 
-
 td.lanrsvp-seatmap-legend {
     height: 20px;
     width: 20px;
     border: 1px solid black;
+}
+
+div#lanrsvp-seatmap-map {
+    overflow: auto;
+}
+
+div#lanrsvp-seatmap-map canvas {
+    max-width: none;
 }

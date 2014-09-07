@@ -1,14 +1,13 @@
 <?php
 
-$data = [];
-$event_id = false;
+$event_id = null;
+$event = null;
 $has_seatmap = true;
 if ( isset ( $_REQUEST['event_id'] ) ) {
     $event_id = $_REQUEST['event_id'];
     $event = DB::get_event( $event_id );
-    if ( isset($event[0]) && is_object($event[0])) {
-        $data = get_object_vars($event[0]);
-        if (isset($data['has_seatmap']) && $data['has_seatmap'] == 0) {
+    if ( is_array($event)) {
+        if ($event['has_seatmap'] == 0) {
             $has_seatmap = false;
         }
     } else {
@@ -37,7 +36,7 @@ if (isset($data['event_id'])) {
                     name="lanrsvp-event-id"
                     type="text"
                     class="regular-text code"
-                    value="<?php echo $data['event_id'];  ?>"
+                    value="<?php echo $event['event_id'];  ?>"
                     disabled
                     />
             </td>
@@ -53,7 +52,7 @@ if (isset($data['event_id'])) {
                     required
                     placeholder="Between 2 and 64 characters ..."
                     class="regular-text code"
-                    value="<?php echo (isset($data['event_title']) ? $data['event_title'] : '')  ?>"
+                    value="<?php echo (isset($event['event_title']) ? $event['event_title'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -67,7 +66,7 @@ if (isset($data['event_id'])) {
                     required
                     placeholder="Example: '2014-08-10 18:30:00'"
                     class="regular-text code"
-                    value="<?php echo (isset($data['start_date']) ? $data['start_date'] : '')  ?>"
+                    value="<?php echo (isset($event['start_date']) ? $event['start_date'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -80,7 +79,7 @@ if (isset($data['event_id'])) {
                     pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
                     placeholder="Optional ..."
                     class="regular-text code"
-                    value="<?php echo (isset($data['end_date']) ? $data['end_date'] : '')  ?>"
+                    value="<?php echo (isset($event['end_date']) ? $event['end_date'] : '')  ?>"
                     />
             </td>
         </tr>
@@ -135,7 +134,7 @@ if (isset($data['event_id'])) {
                     max="100"
                     step="1"
                     placeholder="Optional"
-                    value="<?php echo (isset($data['min_attendees']) ? $data['min_attendees'] : 0)  ?>"
+                    value="<?php echo (isset($event['min_attendees']) ? $event['min_attendees'] : 0)  ?>"
                     />
             </td>
         </tr>
@@ -149,7 +148,7 @@ if (isset($data['event_id'])) {
                     max="100"
                     step="1"
                     placeholder="Optional"
-                    value="<?php echo (isset($data['max_attendees']) ? $data['max_attendees'] : 0)  ?>"
+                    value="<?php echo (isset($event['max_attendees']) ? $event['max_attendees'] : 0)  ?>"
                     />
             </td>
         </tr>
@@ -187,10 +186,26 @@ if (isset($data['event_id'])) {
             Click on the grid below to draw the initial seat map. Click on the cells to change their status.
         </p>
 
-        <?php
-            chdir(__DIR__);
-            include_once(realpath('./../../views/seatmap.php'));
-        ?>
+	    <div id="lanrsvp-seatmap">
+		    <h2>Seat map</h2>
+		    <div id="lanrsvp-seatmap-info">
+			    <p>Hover over the map below to see information about each seat.</p>
+			    <table>
+				    <tr>
+					    <th colspan="2">
+						    Seat <span id="lanrsvp-seat-row">0</span> - <span id="lanrsvp-seat-column">0</span>
+					    </th>
+				    </tr>
+				    <tr>
+					    <td width="50px">Status:</td>
+					    <td id="lanrsvp-seat-status">Not available.</td>
+				    </tr>
+			    </table>
+		    </div>
+		    <div id="lanrsvp-seatmap-map">
+			    <canvas></canvas>
+		    </div>
+	    </div>
 
     </div>
 
@@ -202,7 +217,7 @@ if (isset($data['event_id'])) {
             name="submit"
             id="submit"
             class="button button-primary"
-            value="<?php echo isset($data['event_id']) ? 'Update event' : 'Create event'; ?>"
+            value="<?php echo $event_id ? 'Update event' : 'Create event'; ?>"
             />
     </p>
 

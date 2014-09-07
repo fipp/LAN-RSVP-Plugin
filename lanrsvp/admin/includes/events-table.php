@@ -21,10 +21,6 @@ class Events_Table extends WP_List_Table_Copy {
      */
     function prepare_items() {
         $events = DB::get_events();
-        foreach ($events as $key => $val) {
-            $events[$key] = get_object_vars($val);
-        }
-
         $columns = $this->get_columns();
         $hidden = array();
         $sortable = $this->get_sortable_columns();
