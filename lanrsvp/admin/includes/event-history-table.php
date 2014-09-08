@@ -1,20 +1,19 @@
 <?php
-class Users_Table extends WP_List_Table_Copy {
+class Event_History_Table extends WP_List_Table_Copy {
 
     /**
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
      */
-    function __construct() {
+    function __construct($user_id) {
         parent::__construct( array(
-            'singular'=> 'lanrsvp-user', // Singular label
-            'plural' => 'lanrsvp-users', // plural label, also this well be one of the table css class
+            'singular'=> 'lanrsvp-user-history-entry', // Singular label
+            'plural' => 'lanrsvp-user-history', // plural label, also this well be one of the table css class
             'ajax'   => false // We won't support Ajax for this table
         ) );
 
-        $users = DB::get_users();
-        $this->users = $users;
-
+        $eventHistory = DB::get_event_history($user_id);
+        $this->eventHistory = $eventHistory;
     }
 
     /*
@@ -28,8 +27,8 @@ class Users_Table extends WP_List_Table_Copy {
         $hidden = array();
         $sortable = $this->get_sortable_columns();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort( $this->users, array( &$this, 'usort_reorder' ) );
-        $this->items = $this->users;
+        usort( $this->eventHistory, array( &$this, 'usort_reorder' ) );
+        $this->items = $this->eventHistory;
     }
 
     /*
@@ -38,15 +37,11 @@ class Users_Table extends WP_List_Table_Copy {
      */
     function get_columns(){
         $columns = array(
-            'user_id'           => 'ID',
-            'is_activated'      => 'Active',
-            'email'             => 'E-mail Address',
-            'first_name'        => 'First Name',
-            'last_name'         => 'Last Name',
+            'event_id'          => 'Event ID',
             'registration_date' => 'Registration Date',
-            'comment'           => 'Comment',
-            'events'            => 'Events'
-
+            'ip_address'        => 'IP Address',
+            'seat'              => 'Chosen Seat',
+            'comment'           => 'Comment'
         );
         return $columns;
     }
@@ -58,12 +53,9 @@ class Users_Table extends WP_List_Table_Copy {
      */
     function get_sortable_columns() {
         $sortable_columns = array(
-            'user_id'           => array('user_id',false),
-            'email'             => array('email',false),
-            'first_name'        => array('first_name',false),
-            'last_name'         => array('first_name',false),
+            'event_id'          => array('event_id',false),
             'registration_date' => array('registration_date',false),
-            'events'            => array('events',false),
+            'ip_address'        => array('ip_address',false)
         );
         return $sortable_columns;
     }
@@ -83,11 +75,13 @@ class Users_Table extends WP_List_Table_Copy {
                 $timestamp_b = strtotime( $b[$orderby] );
                 $result = $timestamp_a - $timestamp_b;
                 break;
-            case 'events':
+            case 'event_id':
                 $result = $a[$orderby] - $b[$orderby];
                 break;
-            default:
+            case 'ip_address':
                 $result = strcmp( $a[$orderby], $b[$orderby] );
+                break;
+            default:
                 break;
         }
 
@@ -102,10 +96,8 @@ class Users_Table extends WP_List_Table_Copy {
      */
     function column_default( $item, $column_name ) {
         switch( $column_name ) {
-            case 'user_id':
-            case 'email':
-            case 'first_name':
-            case 'last_name':
+            case 'event_id':
+            case 'comment':
                 return $item[ $column_name];
             case 'registration_date';
                 $val = $item[ $column_name ];
@@ -114,22 +106,16 @@ class Users_Table extends WP_List_Table_Copy {
                 }
                 $timestamp = strtotime( $val );
                 return date( 'l d/m/y H:i', $timestamp );
-            case 'is_activated':
-                return ( $item[ $column_name ] == '0' ) ? 'No' : 'Yes';
-            case 'comment':
-                return sprintf(
-                    '<textarea id="%d" class="user-comment" placeholder="Admin notes about this user ...">%s</textarea>',
-                    $item['user_id'],
-                    $item[ $column_name ]
-                );
-            case 'events':
-                return sprintf(
-                    "<a href='?page=lanrsvp_user&user_id=%d'>%s</a>",
-                    $item['user_id'],
-                    $item[$column_name]
-                );
-                return $item[ $column_name ];
-
+            case 'ip_address':
+                $remote_addr = $item['registered_ip_remote_addr'];
+                $x_forwarded_for = $item['registered_ip_x_forwarded_for'];
+                return $remote_addr . (strlen($x_forwarded_for) > 0 ? " (x-forwarded-for: $x_forwarded_for)" : '');
+            case 'seat':
+                if (strlen($item['seat_row']) == 0 || strlen($item['seat_column']) == 0) {
+                    return '-';
+                } else {
+                    return sprintf("%d-%d",$item['seat_row'], $item['seat_column']);
+                }
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

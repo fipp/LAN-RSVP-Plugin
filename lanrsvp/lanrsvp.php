@@ -39,6 +39,7 @@ require_once( plugin_dir_path( __FILE__ ) . 'includes/class-wp-list-table-copy.p
 require_once( plugin_dir_path( __FILE__ ) . 'includes/attendees-table.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/events-table.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/users-table.php' );
+require_once( plugin_dir_path( __FILE__ ) . 'admin/includes/event-history-table.php' );
 
 
 /*----------------------------------------------------------------------------*

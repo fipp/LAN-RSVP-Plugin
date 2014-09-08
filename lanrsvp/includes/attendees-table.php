@@ -139,8 +139,11 @@ class Attendees_Table extends WP_List_Table_Copy {
                 $timestamp = strtotime( $item[ $column_name ] );
                 return date( 'D d.m, H:i', $timestamp );
             case 'comment':
-                $text = $item[ $column_name ];
-                return "<textarea placeholder='Admin notes about this attendee ...'>$text</textarea>";
+                return sprintf(
+                   '<textarea id="%d" class="attendee-comment" placeholder="Admin notes about this attendee ...">%s</textarea>',
+                    $item['user_id'],
+                    $item[ $column_name ]
+                );
             case 'delete_attendee':
                 return sprintf(
                     '<a href="#" id="%d" class="delete-attendee" style="color: red;"><i class="fa fa-times fa-lg"></i></a>',

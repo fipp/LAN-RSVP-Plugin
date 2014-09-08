@@ -305,6 +305,44 @@ class DB {
         ), ARRAY_A);
     }
 
+    public static function set_attendee_comment($event_id, $user_id, $comment) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $rowsUpdated = $wpdb->update(
+            $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
+            array('comment' => $comment),
+            array(
+                'event_id'  => $event_id,
+                'user_id'   => $user_id
+            ),
+            array('%s'),
+            array('%d','%d')
+        );
+
+        if (!$rowsUpdated) {
+            throw new Exception("System error. Could not set attendee comment. Please contact plugin author.");
+        }
+    }
+
+    public static function set_user_comment($user_id, $comment) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $rowsUpdated = $wpdb->update(
+            $wpdb->prefix . self::USER_TABLE_NAME,
+            array('comment' => $comment),
+            array('user_id' => $user_id),
+            array('%s'),
+            array('%d')
+        );
+
+        if (!$rowsUpdated) {
+            throw new Exception("System error. Could not set user comment. Please contact plugin author.");
+        }
+    }
+
+
     public static function get_event($event_id) {
         /** @var $wpdb WPDB */
         global $wpdb;
@@ -358,7 +396,14 @@ class DB {
         global $wpdb;
 
         $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
-        return $wpdb->get_results("SELECT user_id, is_activated, email, first_name, last_name, registration_date, comment FROM $user_table_name", ARRAY_A);
+        $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
+        $res = $wpdb->get_results(
+            "SELECT
+              a.user_id, a.is_activated, a.email, a.first_name, a.last_name, a.registration_date, a.comment,
+              (SELECT COUNT(*) FROM $attendee_table_name WHERE user_id = a.user_id) AS 'events'
+            FROM $user_table_name a", ARRAY_A);
+
+        return $res;
     }
 
     public static function get_user($user_id = null, $email = null) {
@@ -377,6 +422,24 @@ class DB {
                 $email
             ), ARRAY_A);
         }
+    }
+
+    public static function get_event_history($user_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT a.*, b.seat_row, b.seat_column
+                 FROM $attendee_table_name a
+                   LEFT JOIN $seat_table_name b ON a.event_id = b.event_id AND a.user_id = b.user_id
+                 WHERE a.user_id = %d",
+                $user_id
+            ),
+            ARRAY_A
+        );
     }
 
     public static function set_password ($user_id = null, $email = null, $newPassword) {

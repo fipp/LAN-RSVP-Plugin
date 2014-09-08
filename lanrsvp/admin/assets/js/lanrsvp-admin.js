@@ -97,10 +97,51 @@
                     if (response.length > 0) {
                         alert(response);
                     } else {
-                        window.location.replace('?page=lanrsvp_attendee&event_id=' + LanRsvpAdmin.event_id);
+                        window.location.replace('?page=lanrsvp_attendees&event_id=' + LanRsvpAdmin.event_id);
                     }
                 });
             }
+        });
+
+        // Handling attendees comments
+        $('#saveAttendees').click(function() {
+            var data = {
+                action: 'save_attendee_comments',
+                event_id: LanRsvpAdmin.event_id,
+                attendee_comments: {}
+            };
+            $.each($('textarea.attendee-comment'), function() {
+                var user_id = $(this).attr('id');
+                var comment = $(this).val();
+                data['attendee_comments'][user_id] = comment;
+            });
+            $.post( ajaxurl, data, function(response) {
+                if (response.length > 0) {
+                    alert(response);
+                } else {
+                    window.location.replace('?page=lanrsvp_attendees&event_id=' + LanRsvpAdmin.event_id);
+                }
+            });
+        });
+
+        // Handling users comments
+        $('#saveUsers').click(function() {
+            var data = {
+                action: 'save_user_comments',
+                user_comments: {}
+            };
+            $.each($('textarea.user-comment'), function() {
+                var user_id = $(this).attr('id');
+                var comment = $(this).val();
+                data['user_comments'][user_id] = comment;
+            });
+            $.post( ajaxurl, data, function(response) {
+                if (response.length > 0) {
+                    alert(response);
+                } else {
+                    window.location.replace('?page=lanrsvp_users');
+                }
+            });
         });
 
 

@@ -98,6 +98,9 @@ class LanRsvpAdmin {
         add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
         add_action( 'wp_ajax_delete_attendee', array( $this, 'delete_attendee' ) );
 
+        add_action( 'wp_ajax_save_user_comments', array( $this, 'save_user_comments' ) );
+        add_action( 'wp_ajax_save_attendee_comments', array( $this, 'save_attendee_comments' ) );
+
     }
 
     /**
@@ -303,6 +306,17 @@ class LanRsvpAdmin {
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
 
+        // User event history
+        $hookname = add_submenu_page(
+            null,
+            __( 'LAN RSVP Plugin - User', $this->plugin_slug ),
+            __( 'User', $this->plugin_slug ),
+            'manage_options',
+            $this->plugin_slug . '_user',
+            array( $this, 'display_plugin_user_page' )
+        );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
+
     }
 
     /**
@@ -359,6 +373,21 @@ class LanRsvpAdmin {
         }
     }
 
+    /**
+     * Render the user page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_user_page() {
+        if (isset($_REQUEST['user_id']) && is_numeric($_REQUEST['user_id'])) {
+            $user_id = $_REQUEST['user_id'];
+            $eventHistoryTable = new Event_History_table($user_id);
+            include_once('views/user.php');
+        }
+    }
+
+
+
     public function register_settings() {
 
         register_setting( $this->plugin_slug . '_settings', 'logip' );
@@ -411,6 +440,37 @@ class LanRsvpAdmin {
         } catch (Exception $e) {
             echo $e->getMessage();
         }
+        die();
+    }
+
+    public function save_attendee_comments() {
+        try {
+            if (isset($_REQUEST['event_id']) && is_numeric($_REQUEST['event_id'])) {
+                $event_id = $_REQUEST['event_id'];
+                if (isset($_REQUEST['attendee_comments']) && is_array($_REQUEST['attendee_comments'])) {
+                    foreach ($_REQUEST['attendee_comments'] as $user_id => $comment) {
+                        DB::set_attendee_comment($event_id, $user_id, $comment);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $e->getMessage();
+        }
+
+        die();
+    }
+
+    public function save_user_comments() {
+        try {
+            if (isset($_REQUEST['user_comments']) && is_array($_REQUEST['user_comments'])) {
+                foreach ($_REQUEST['user_comments'] as $user_id => $comment) {
+                    DB::set_user_comment($user_id, $comment);
+                }
+            }
+        } catch (Exception $e) {
+            $e->getMessage();
+        }
+
         die();
     }
 

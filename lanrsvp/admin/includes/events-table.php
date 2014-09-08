@@ -87,20 +87,21 @@ class Events_Table extends WP_List_Table_Copy {
             case 'event_id':
             case 'attendees_registered':
             case 'min_attendees':
-            case 'max_attendees':
-                if ($orderby == "max_attendees") {
-                    $val_a = $a[$orderby];
-                    if ( $val_a == 0 && $a['total_seats'] > 0 ) {
-                        $val_a = $a['total_seats'];
-                    }
-                    $val_b = $b[$orderby];
-                    if ( $val_b == 0 && $b['total_seats'] > 0 ) {
-                        $val_b = $b['total_seats'];
-                    }
-                    $val_a = ( $val_a == 0) ? 99999999999 : $val_a;
-                    $val_b = ( $val_b == 0) ? 99999999999 : $val_b;
-                }
                 $result = $a[$orderby] - $b[$orderby];
+                break;
+            case 'max_attendees':
+                $val_a = $a[$orderby];
+                if ( $val_a == 0 && $a['total_seats'] > 0 ) {
+                    $val_a = $a['total_seats'];
+                }
+                $val_b = $b[$orderby];
+                if ( $val_b == 0 && $b['total_seats'] > 0 ) {
+                    $val_b = $b['total_seats'];
+                }
+                $val_a = ( $val_a == 0) ? 99999999999 : $val_a;
+                $val_b = ( $val_b == 0) ? 99999999999 : $val_b;
+
+                $result = $val_a - $val_b;
                 break;
             default:
                 $result = strcmp( $a[$orderby], $b[$orderby] );
