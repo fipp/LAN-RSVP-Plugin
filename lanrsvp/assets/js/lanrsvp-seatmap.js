@@ -21,13 +21,15 @@
         window.seatmapColSize = mapSize[1]; // Initial columns of rows for the seat map
         $('input[name="lanrsvp-seatmap-cols"]').val(mapSize[1]);
 
-        var canEdit = seatmap_data.canEdit;
+        var canSignUp = seatmap_data.canSignUp;
         var isAdmin = seatmap_data.isAdmin;
 
         var mouseIsDown = false; // Variable keeping track of when the mouse is down
         var paintedOnMouseDown = Array(); // Array to keep track of which seats are painted on each mousedown
-        var currentRow = undefined; // Variable showing which row we are currently hovering
-        var currentColumn = undefined; // Variable showing which column we are currently hovering
+
+        var currentCell = [undefined, undefined];
+        window.chosenSeat = [undefined, undefined]; // For users signing up, one seat can be chosen at a time
+
         var refreshingCells = false; // When refreshingCells === true, we cannot paint any new cells
 
         drawSeatmap();
@@ -51,6 +53,8 @@
                         } else {
                             seats[row][column]['status'] = 'busy';
                             seats[row][column]['user_id'] = seat['user_id'];
+                            seats[row][column]['first_name'] = seat['first_name'];
+                            seats[row][column]['last_name'] = seat['last_name'];
                         }
                     }
                 }
@@ -100,7 +104,7 @@
             canvas = canvas.get(0);
 
             canvas.addEventListener('mousemove', mouseMoveListener, false);
-            if (canEdit || isAdmin) {
+            if (canSignUp || isAdmin) {
                 canvas.addEventListener('mousedown', mouseDownListener, false);
                 canvas.addEventListener('mouseup', mouseUpListener, false);
             }
@@ -153,7 +157,7 @@
                 if (seats[row] !== undefined) {
                     for (var col = 0; col < seats[row].length; col++) {
                         if (seats[row][col] !== undefined) {
-                            paintSeat(row,col);
+                            paintSeat([row,col],seats[row][col]['status']);
                         }
                     }
                 }
@@ -163,21 +167,19 @@
 
         function mouseMoveListener(evt) {
             var mousePos = getMousePos(canvas, evt);
-            var column = Math.floor( (mousePos.x - 1) / cellSize);
             var row = Math.floor( (mousePos.y - 1) / cellSize);
+            var col = Math.floor( (mousePos.x - 1) / cellSize);
 
-            if (column !== -1 && row !== -1) {
-                if (column !== currentColumn || row !== currentRow) {
-                    currentRow = row;
-                    currentColumn = column;
+            if (col !== -1 && row !== -1) {
+                if (col !== currentCell[1] || row !== currentCell[0]) {
+                    currentCell = [row, col];
 
                     if (withinBounds()) {
-                        //writeDebug('hover: row ' + row + ', column ' + column);
-                        setSeatStatus(currentRow,currentColumn);
+                        setSeatStatus(currentCell);
 
-                        if ((canEdit || isAdmin) && mouseIsDown && !refreshingCells) {
-                            if (toggleSeatStatus(currentRow, currentColumn)) {
-                                paintSeat(currentRow, currentColumn);
+                        if (isAdmin && mouseIsDown && !refreshingCells) {
+                            if (toggleSeatStatus(currentCell)) {
+                                paintSeat(currentCell, seats[row][col]['status']);
                             }
 
                         }
@@ -188,10 +190,13 @@
 
         function mouseDownListener() {
             mouseIsDown = true;
-            if (!refreshingCells) {
+            if (!refreshingCells && (canSignUp || isAdmin)) {
                 if (withinBounds()) {
-                    if (toggleSeatStatus(currentRow, currentColumn)) {
-                        paintSeat(currentRow, currentColumn);
+                    var row = currentCell[0];
+                    var col = currentCell[1];
+                    if (toggleSeatStatus(currentCell)) {
+                        var status2 = seats[row][col]['status'];
+                        paintSeat(currentCell, seats[row][col]['status']);
                     }
                 }
             }
@@ -199,10 +204,10 @@
 
         function withinBounds() {
             return (
-                currentRow !== 0 &&
-                currentColumn !== 0 &&
-                currentRow !== (window.seatmapRowSize - 1) &&
-                currentColumn !== (window.seatmapColSize - 1));
+                currentCell[0] !== 0 &&
+                currentCell[1] !== 0 &&
+                currentCell[0] !== (window.seatmapRowSize - 1) &&
+                currentCell[1] !== (window.seatmapColSize - 1));
         }
 
         var storeSeatsTimeout;
@@ -222,7 +227,10 @@
             };
         }
 
-        function toggleSeatStatus (row, column) {
+        function toggleSeatStatus (cell) {
+
+            var row = cell[0];
+            var col = cell[1];
 
             // Initialize row if needed
             if (seats[row] === undefined) {
@@ -230,74 +238,95 @@
             }
 
             // Initialize column if needed
-            if (seats[row][column] === undefined) {
-                seats[row][column] = Object();
+            if (seats[row][col] === undefined) {
+                seats[row][col] = Object();
             }
 
-            // If we already have painted this cell during this
-            // mousedown, we don't paint it again.
-            if (paintedOnMouseDown[row] !== undefined && paintedOnMouseDown[row][column] !== undefined) {
-                return;
+            if (isAdmin) {
+                // If we already have painted this cell during this
+                // mousedown, we don't paint it again.
+                if (paintedOnMouseDown[row] !== undefined && paintedOnMouseDown[row][column] !== undefined) {
+                    return;
+                }
             }
 
             var hasToggled = false;
 
-            // Change status (undefined => 'free', 'free' => undefined)
-            switch (seats[row][column]['status']) {
-                case undefined:
-                    hasToggled = true;
-                    seats[row][column]['status'] = 'free';
-                    break;
-                case 'free':
-                    hasToggled = true;
-                    delete seats[row][column];
-                    break;
-                default:
-                    break;
+            if (isAdmin) {
+                switch (seats[row][col]['status']) {
+                    case undefined:
+                        hasToggled = true;
+                        seats[row][col]['status'] = 'free';
+                        break;
+                    case 'free':
+                        hasToggled = true;
+                        delete seats[row][col];
+                        break;
+                    default:
+                        break;
+                }
+            } else if (canSignUp && seats[row][col]['status'] == 'free') {
+
+                // Reset any previous chosen seat to 'free'
+                if (window.chosenSeat[0] !== undefined && window.chosenSeat[1] !== undefined) {
+                    var chosenRow = window.chosenSeat[0];
+                    var chosenCol = window.chosenSeat[1];
+                    seats[chosenRow][chosenCol]['status'] = 'free';
+                    paintSeat(chosenSeat,'free');
+                }
+
+                // Set the new chosen seat
+                window.chosenSeat[0] = row;
+                window.chosenSeat[1] = col;
+
+                hasToggled = true;
+                seats[row][col]['status'] = 'busy';
             }
 
-            // Variable to make sure we don't paint this cell again during this
-            // "paint session". Reset every time mouseUpListener is called
-            if (paintedOnMouseDown[row] === undefined) {
-                paintedOnMouseDown[row] = Array();
+            if (isAdmin) {
+                // Variable to make sure we don't paint this cell again during this
+                // "paint session". Reset every time mouseUpListener is called
+                if (paintedOnMouseDown[row] === undefined) {
+                    paintedOnMouseDown[row] = Array();
+                }
+                paintedOnMouseDown[row][column] = true;
             }
-            paintedOnMouseDown[row][column] = true;
 
             return hasToggled;
         }
 
-        function paintSeat (row, column) {
+        function paintSeat (cell, status) {
             clearTimeout(storeSeatsTimeout);
 
-            var status;
-            if (seats[row] === undefined || seats[row][column] === undefined) {
-                status = undefined;
-            } else {
-                status = seats[row][column]['status'];
-            }
+            var row = cell[0];
+            var col = cell[1];
 
             switch (status) {
                 case undefined:
                     context.clearRect(
-                        column * cellSize + 1,
+                        col * cellSize + 1,
                         row * cellSize + 1,
                         cellSize - 1,
                         cellSize - 1
                     );
                     break;
                 case 'free':
-                    context.fillStyle="#138e10";
+                    context.fillStyle = "#138e10";
                     context.fillRect(
-                        column * cellSize + 1,
+                        col * cellSize + 1,
                         row * cellSize + 1,
                         cellSize - 1,
                         cellSize - 1
                     );
                     break;
                 case 'busy':
-                    context.fillStyle="#9C1616";
+                    if (isAdmin) {
+                        context.fillStyle = "#9C1616";
+                    } else {
+                        context.fillStyle = "#000000";
+                    }
                     context.fillRect(
-                        column * cellSize + 1,
+                        col * cellSize + 1,
                         row * cellSize + 1,
                         cellSize - 1,
                         cellSize - 1
@@ -309,30 +338,23 @@
 
         }
 
-        function setSeatStatus(row, column) {
+        function setSeatStatus(cell) {
+            var row = cell[0];
+            var col = cell[1];
+
             $('#lanrsvp-seat-row').text(row);
-            $('#lanrsvp-seat-column').text(column);
+            $('#lanrsvp-seat-column').text(col);
 
             var status = '';
-            if (seats[row] === undefined || seats[row][column] === undefined ||
-                seats[row][column]['status'] === undefined) {
+            if (seats[row] === undefined || seats[row][col] === undefined ||
+                seats[row][col]['status'] === undefined) {
                 status = 'Not defined.';
-            } else if (seats[row][column]['status'] == 'free') {
+            } else if (seats[row][col]['status'] == 'free') {
                 status = 'Available.';
-            } else {
-                status = '<i class="fa fa-refresh fa-spin"></i>';
-
-                var data = {
-                    'action': 'get_attendee',
-                    'event_id': seatmap_data['event_id'],
-                    'user_id': seats[row][column]['user_id']
-                };
-
-                $.post( seatmap_data['ajaxurl'], data, function(response) {
-                    $('#lanrsvp-seat-status').text(response);
-                });
+            } else if (seats[row][col]['status'] == 'busy') {
+                status = 'Taken by ' + seats[row][col]['first_name'] + ' ' + seats[row][col]['last_name'] + '.';
             }
-            $('#lanrsvp-seat-status').html(status);
+            $('#lanrsvp-seat-status').text(status);
         }
 
         $('input[name="lanrsvp-seatmap-cols"]').change(function() {

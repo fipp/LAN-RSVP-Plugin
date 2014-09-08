@@ -87,11 +87,12 @@ class LanRsvp {
         add_action('wp_ajax_activate_user', array( $this, 'activate_user'));
         add_action('wp_ajax_nopriv_activate_user', array( $this, 'activate_user'));
 
-        add_action('wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
-        add_action('wp_ajax_nopriv_get_attendee', array( $this, 'get_attendee' ) );
-
         add_action('wp_ajax_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
         add_action('wp_ajax_nopriv_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
+
+        add_action('wp_ajax_sign_up', array( $this, 'ajax_sign_up' ) );
+        add_action('wp_ajax_nopriv_sign_up', array( $this, 'ajax_sign_up' ) );
+
     }
 
     /**
@@ -369,15 +370,20 @@ class LanRsvp {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
             if (is_array($event)) {
+                $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
+
                 wp_enqueue_script($this->plugin_slug . '-public-script');
                 wp_localize_script(
                     $this->plugin_slug . '-public-script',
                     'LanRsvp',
-                    array('ajaxurl' => admin_url('admin-ajax.php'))
+                    array(
+                        'ajaxurl' => admin_url('admin-ajax.php'),
+                        'event_id' => $event_id,
+                        'has_seatmap' => $has_seatmap
+                    )
                 );
                 wp_enqueue_style($this->plugin_slug .'-public-styles');
 
-                $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
                 $is_authenticated = session_id() && isset($_SESSION['lanrsvp-userid']);
                 $is_signed_up = false;
                 $attendee = false;
@@ -416,7 +422,7 @@ class LanRsvp {
                     $seatmap_data = [
                         'event_id'        => $event_id,
                         'isAdmin'         => false,
-	                    'canEdit'         => $can_sign_up,
+	                    'canSignUp'         => $can_sign_up,
                         'seats'           => $seats
                     ];
 
@@ -441,7 +447,8 @@ class LanRsvp {
                 echo '<div id="lanrsvp">';
                 include_once('views/event-details.php');
                 include_once('views/authenticate.php' );
-                self::get_authenticated($event_id, $can_sign_up);
+                self::get_authenticated($event_id, $has_seatmap, $is_authenticated, $is_signed_up,
+                    $can_sign_up, $attendee);
    	            include_once('views/attendees.php');
                 include_once('views/seatmap.php');
 	            echo '</div>';
@@ -457,17 +464,17 @@ class LanRsvp {
 
     public static function ajax_get_authenticated() {
         try {
-            $_REQUEST = self::checkAndTrimParams(['event_id'], $_REQUEST);
-            self::get_authenticated($_REQUEST['event_id']);
+            $_REQUEST = self::checkAndTrimParams(['event_id', 'has_seatmap'], $_REQUEST);
+            self::get_authenticated($_REQUEST['event_id'],$_REQUEST['has_seatmap']);
         } catch (Exception $e) {
-            echo "There was an internal error. Please contact the system administrator";
+            echo "There was an internal error. Please contact the system administrator.";
         }
 
         die();
     }
 
     public static function get_authenticated(
-        $event_id, $is_authenticated = null, $is_signed_up = null, $can_sign_up = null, $attendee = null)
+        $event_id, $has_seatmap, $is_authenticated = null, $is_signed_up = null, $can_sign_up = null, $attendee = null)
     {
         if (is_null($is_authenticated)) {
             $is_authenticated = session_id() && isset($_SESSION['lanrsvp-userid']);
@@ -487,7 +494,9 @@ class LanRsvp {
             }
         }
 
+        $user = null;
         if ($is_authenticated) {
+            $user = DB::get_user($_SESSION['lanrsvp-userid']);
             if (is_null($attendee) || is_null($is_signed_up)) {
                 $attendee_raw = DB::get_attendee($event_id, $_SESSION['lanrsvp-userid']);
                 if (is_array($attendee_raw)) {
@@ -498,6 +507,32 @@ class LanRsvp {
         }
 
         include_once('views/authenticated.php' );
+    }
+
+    public static function sign_up() {
+        try {
+            $user_id = null;
+            if (isset($_SESSION['lanrsvp-userid'])) {
+                $user_id = $_SESSION['lanrsvp-userid'];
+            } else {
+                throw new Exception("User not logged in! Try again, or contact system administrator.");
+            }
+
+            $_REQUEST = self::checkAndTrimParams(['event_id','seat_row','seat_col'], $_REQUEST);
+            $event_id = $_REQUEST['event_id'];
+            $seat_row = $_REQUEST['seat_row'];
+            if ($seat_row) {
+                $seat_row = null;
+            }
+            $seat_col = $_REQUEST['seat_col'];
+            if ($seat_col) {
+                $seat_col = null;
+            }
+
+            DB::create_attendee($event_id, $user_id, $seat_row, $seat_col);
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
     }
 
     function login() {
@@ -648,23 +683,6 @@ HTML;
         }
 
         return $source;
-    }
-
-    public static function get_attendee() {
-        if (!isset($_REQUEST['event_id']) || !isset($_REQUEST['user_id'])) {
-            echo "Attendee not found!";
-            die();
-        }
-
-        $attendee = DB::get_attendee($_REQUEST['event_id'], $_REQUEST['user_id']);
-        if (is_array($attendee)) {
-            $full_name = $attendee['first_name'] . ' ' . $attendee['last_name'];
-            echo "Taken by $full_name";
-        } else {
-            echo "Error - Not found! Contact plugin author.";
-        }
-
-        die();
     }
 
     public static function _log ( $message ) {

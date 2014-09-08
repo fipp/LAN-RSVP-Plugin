@@ -3,11 +3,6 @@
 
 	$(function () {
 
-        $('button#showLoginForm').click(function() {
-            $(this).hide();
-            $('form.lanrsvp-login-form').show();
-        });
-
         $('div#lanrsvp-authenticate a').click(function(e) {
             e.preventDefault();
             var className = $(this).attr('class');
@@ -52,7 +47,42 @@
         });
 
         $('button.signUp').click(function() {
+            var data = {
+                action: 'sign_up',
+                event_id: LanRsvp['event_id'],
+                seat_row: '-',
+                seat_col: '-'
+            };
 
+            if (LanRsvp['has_seatmap'] === '1') {
+                var chosenSeat = window.chosenSeat;
+                if (chosenSeat !== undefined && chosenSeat[0] !== undefined && chosenSeat[1] !== undefined) {
+                    data['seat_row'] = chosenSeat[0];
+                    data['seat_col'] = chosenSeat[1];
+                } else {
+                    var msg = "No seat chosen, please try again.";
+                    $('div.lanrsvp-authenticated-message').html(msg);
+                    return;
+                }
+            }
+
+            $.post(LanRsvp.ajaxurl, data, function (response) {
+                if (response.length > 0) {
+                    $('div.lanrsvp-authenticated-message').html(response);
+                } else {
+                    data = {
+                        action: 'get_authenticated',
+                        event_id: LanRsvp.event_id,
+                        has_seatmap: LanRsvp.has_seatmap
+                    };
+
+                    $.post(LanRsvp.ajaxurl, data, function (response) {
+                        $('div#lanrsvp-authenticated').replace(response);
+                        $('div#lanrsvp-authenticated').show();
+                    });
+
+                }
+            });
         });
 
         function doLogin(form) {
@@ -70,11 +100,12 @@
 
                     data = {
                         action: 'get_authenticated',
-                        event_id : LanRsvp.event_id
+                        event_id : LanRsvp.event_id,
+                        has_seatmap : LanRsvp.has_seatmap
                     };
 
-                    $.post( LanRsvp.ajaxurl, data, function(reponse) {
-                        $('div#lanrsvp-authenticated').html(response);
+                    $.post( LanRsvp.ajaxurl, data, function(response) {
+                        $('div#lanrsvp-authenticated').replace(response);
                         $('div#lanrsvp-authenticated').show();
                     });
                 }

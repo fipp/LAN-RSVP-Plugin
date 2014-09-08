@@ -122,6 +122,46 @@ class DB {
         }
     }
 
+    public static function create_attendee($event_id, $user_id, $seat_row = null, $seat_col = null) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $event = DB::get_event($event_id);
+        $has_seatmap = ($event['has_seatmap'] == '1' ? true : false);
+        if ($has_seatmap && (is_null($seat_row) || is_null($seat_col))) {
+            throw new Exception("Event $event_id has a seat map, but no seat was given during sign up.");
+        }
+
+        try {
+            $wpdb->query('START TRANSACTION');
+            $wpdb->insert(
+                $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
+                array(
+                    'event_id' => $event_id,
+                    'user_id' => $user_id
+                ),
+                array('%d','%d')
+            );
+
+            if ($has_seatmap) {
+                $wpdb->insert(
+                    $wpdb->prefix . self::SEAT_TABLE_NAME,
+                    array(
+                        'event_id' => $event_id,
+                        'seat_row' => $seat_row,
+                        'seat_col' => $seat_col
+                    ),
+                    array('%s','%s','%s')
+                );
+            }
+
+            $wpdb->query('COMMIT');
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            throw $e;
+        }
+    }
+
     public static function activate_user($user) {
         /** @var $wpdb WPDB */
         global $wpdb;
@@ -198,8 +238,11 @@ class DB {
         global $wpdb;
 
         $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+        $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $seat_table_name WHERE event_id = %d",
+            "SELECT a.*, b.user_id, b.first_name, b.last_name
+            FROM $seat_table_name a LEFT JOIN $user_table_name b ON a.user_id = b.user_id
+            WHERE event_id = %d",
             $event_id
         ), ARRAY_A);
     }
