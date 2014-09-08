@@ -16,16 +16,16 @@
 	        </tr>
 	    </table>
 	    -->
-		<p>Hover over the map below to see information about each seat.</p>
+		<p>Move the mouse over the seat map to see information about each seat.</p>
 		<table>
 			<tr>
 				<th colspan="2">
-					Seat <span id="lanrsvp-seat-row">0</span> - <span id="lanrsvp-seat-column">0</span>
+					Seat <span id="lanrsvp-seat-row"></span> - <span id="lanrsvp-seat-column"></span>
 				</th>
 			</tr>
 			<tr>
 				<td width="50px">Status:</td>
-				<td id="lanrsvp-seat-status">Not available.</td>
+				<td id="lanrsvp-seat-status">Not defined.</td>
 			</tr>
 		</table>
 	</div>

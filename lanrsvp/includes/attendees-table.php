@@ -8,13 +8,24 @@ class Attendees_Table extends WP_List_Table_Copy {
      */
     function __construct($attendees, $admin = false, $has_seatmap = false) {
         parent::__construct( array(
-            'singular'=> 'wp_list_text_link', // Singular label
-            'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
+            'singular'=> 'lanrsvp-attendee', // Singular label
+            'plural' => 'lanrsvp-attendees', // plural label, also this well be one of the table css class
             'ajax'   => false, // We won't support Ajax for this table
             'screen' => 'interval-list' // hook suffix
         ) );
 
+        if ($has_seatmap) {
+            foreach ($attendees as $key => $attendee) {
+                $seat_row = $attendees[$key]['seat_row'];
+                unset($attendees[$key]['seat_row']);
+                $seat_col = $attendees[$key]['seat_column'];
+                unset($attendees[$key]['seat_col']);
+                $attendees[$key]['seat'] = "$seat_row - $seat_col";
+            }
+        }
+
         $this->attendees = $attendees;
+
         $this->isAdmin = $admin;
         $this->has_seatmap = $has_seatmap;
     }
@@ -43,17 +54,20 @@ class Attendees_Table extends WP_List_Table_Copy {
 
         if ($this->isAdmin) {
             $columns['user_id'] = 'ID';
+            $columns['delete_attendee'] = 'Delete';
         }
 
         $columns['full_name'] = 'Name';
-
         if ($this->isAdmin) {
-            $columns['email'] = 'E-mail Address';
+            $columns['email'] = 'E-mail';
         }
 
         if ($this->has_seatmap) {
-            $columns['seat_row'] = 'Seat Row';
-            $columns['seat_column'] = 'Seat Column';
+            $columns['seat'] = 'Seat';
+        }
+
+        if ($this->isAdmin) {
+            $columns['comment'] = 'Comment';
         }
 
         $columns['registration_date'] = 'Registration Date';
@@ -70,8 +84,7 @@ class Attendees_Table extends WP_List_Table_Copy {
             'user_id'           => array('user_id',false),
             'full_name'         => array('full_name',false),
             'email'             => array('email',false),
-            'seat_row'          => array('seat_row',false),
-            'seat_column'       => array('seat_column',false),
+            'seat'              => array('seat',false),
             'registration_date' => array('registration_date',false),
         );
         return $sortable_columns;
@@ -88,10 +101,9 @@ class Attendees_Table extends WP_List_Table_Copy {
         $result = 0;
         switch ($orderby) {
             case 'user_id':
-            case 'seat_row':
-            case 'seat_column':
                 $result = $a[$orderby] - $b[$orderby];
                 break;
+            case 'seat':
             case 'full_name':
             case 'email':
                 $result = strcmp( $a[$orderby], $b[$orderby] );
@@ -118,8 +130,7 @@ class Attendees_Table extends WP_List_Table_Copy {
         switch( $column_name ) {
             case 'user_id':
             case 'email':
-            case 'seat_row':
-            case 'seat_column':
+            case 'seat':
                 return $item[ $column_name ];
             case 'full_name':
                 return $item['first_name'] . ' ' .$item['last_name'];
@@ -127,6 +138,14 @@ class Attendees_Table extends WP_List_Table_Copy {
             case 'registration_date';
                 $timestamp = strtotime( $item[ $column_name ] );
                 return date( 'D d.m, H:i', $timestamp );
+            case 'comment':
+                $text = $item[ $column_name ];
+                return "<textarea placeholder='Admin notes about this attendee ...'>$text</textarea>";
+            case 'delete_attendee':
+                return sprintf(
+                    '<a href="#" id="%d" class="delete-attendee" style="color: red;"><i class="fa fa-times fa-lg"></i></a>',
+                    $item['user_id']
+                );
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

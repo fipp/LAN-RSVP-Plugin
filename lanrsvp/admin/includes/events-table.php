@@ -7,8 +7,8 @@ class Events_Table extends WP_List_Table_Copy {
      */
     function __construct() {
         parent::__construct( array(
-            'singular'=> 'wp_list_text_link', // Singular label
-            'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
+            'singular'=> 'lanrsvp-event', // Singular label
+            'plural' => 'lanrsvp-events', // plural label, also this well be one of the table css class
             'ajax'   => false // We won't support Ajax for this table
         ) );
     }
@@ -35,7 +35,7 @@ class Events_Table extends WP_List_Table_Copy {
      */
     function get_columns(){
         $columns = array(
-            'event_id'              => 'ID / Change',
+            'event_id'              => 'ID',
             'is_active'             => 'Active',
             'event_title'           => 'Event Title',
             'start_date'            => 'Start Date',
@@ -89,8 +89,16 @@ class Events_Table extends WP_List_Table_Copy {
             case 'min_attendees':
             case 'max_attendees':
                 if ($orderby == "max_attendees") {
-                    $a[$orderby] = ( $a[$orderby] == 0) ? 99999999999 : $a[$orderby];
-                    $b[$orderby] = ( $b[$orderby] == 0) ? 99999999999 : $b[$orderby];
+                    $val_a = $a[$orderby];
+                    if ( $val_a == 0 && $a['total_seats'] > 0 ) {
+                        $val_a = $a['total_seats'];
+                    }
+                    $val_b = $b[$orderby];
+                    if ( $val_b == 0 && $b['total_seats'] > 0 ) {
+                        $val_b = $b['total_seats'];
+                    }
+                    $val_a = ( $val_a == 0) ? 99999999999 : $val_a;
+                    $val_b = ( $val_b == 0) ? 99999999999 : $val_b;
                 }
                 $result = $a[$orderby] - $b[$orderby];
                 break;
@@ -111,21 +119,21 @@ class Events_Table extends WP_List_Table_Copy {
      */
     function column_default( $item, $column_name ) {
         switch( $column_name ) {
-            case 'event_id':
-                $editBtn = sprintf(
-                    '<a href="?page=lanrsvp_event&event_id=%d"><i class="fa fa-pencil-square-o fa-lg"></i></a>',
-                    $item['event_id']
-                );
-
-                $removeBtn = sprintf(
-                    '<a href="&oo" id="%d" class="remove-event" style="color: red;"><i class="fa fa-times fa-lg"></i></a>',
-                    $item['event_id']
-                );
-
-                return $item[ $column_name ] . " / $editBtn $removeBtn";
             case 'event_title':
+                return sprintf(
+                    "<a href='?page=lanrsvp_event&event_id=%d'>%s</a>",
+                    $item['event_id'],
+                    $item[$column_name]
+                );
+            case 'event_id':
             case 'min_attendees':
+                return $item[ $column_name ];
             case 'attendees_registered':
+                return sprintf(
+                    "<a href='?page=lanrsvp_attendees&event_id=%d'>%s</a>",
+                    $item['event_id'],
+                    $item[$column_name]
+                );
                 return $item[ $column_name ];
             case 'start_date';
             case 'end_date':
@@ -137,10 +145,15 @@ class Events_Table extends WP_List_Table_Copy {
                 return date( 'l d/m/y H:i', $timestamp );
             case 'is_active':
             case 'has_seatmap':
-                return ( $item[ $column_name ] == 0 ) ? 'No' : 'Yes';
+                return ( $item[ $column_name ] == '0' ) ? 'No' : 'Yes';
             case 'max_attendees':
                 $val = $item[ $column_name ];
-                return ( $val == 0 ) ? 'Unlimited' : $val;
+                if ( $val == 0 && $item['total_seats'] > 0 ) {
+                    $val = $item['total_seats'];
+                } else if ($val == 0) {
+                    $val = 'Unlimited';
+                }
+                return $val;
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

@@ -8,7 +8,8 @@ div#lanrsvp-seatmap-info table {
     margin: 0 0 10px;
 }
 
-div#lanrsvp-seatmap-info table td {
+div#lanrsvp-seatmap-info table td,
+div#lanrsvp-seatmap-info table th {
     padding: 5px;
     vertical-align: middle;
 }

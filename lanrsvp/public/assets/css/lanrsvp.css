@@ -22,3 +22,16 @@
     text-transform: none;
     text-decoration: none;
 }
+
+.lanrsvp-authenticated-message {
+    font-style: italic;
+    color: red;
+}
+
+#lanrsvp .green {
+    color: green;
+}
+
+#lanrsvp .red {
+    color: red;
+}

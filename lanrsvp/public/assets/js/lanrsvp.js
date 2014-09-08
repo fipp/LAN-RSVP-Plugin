@@ -4,8 +4,13 @@
 	$(function () {
 
         $('div#lanrsvp-authenticate a').click(function(e) {
-            e.preventDefault();
             var className = $(this).attr('class');
+            if (className.length > 0) {
+                e.preventDefault();
+            } else {
+                return;
+            }
+
             $('div#lanrsvp-authenticate > form').hide();
             switch (className) {
                 case 'logIn':
@@ -70,6 +75,9 @@
                 if (response.length > 0) {
                     $('div.lanrsvp-authenticated-message').html(response);
                 } else {
+                    var isHardRefresh = false;
+                    location.reload(isHardRefresh);
+                    /*
                     data = {
                         action: 'get_authenticated',
                         event_id: LanRsvp.event_id,
@@ -80,7 +88,22 @@
                         $('div#lanrsvp-authenticated').replace(response);
                         $('div#lanrsvp-authenticated').show();
                     });
+                    */
+                }
+            });
+        });
 
+        $('button.unsubscribe').click(function() {
+            var data = {
+                action: 'unsubscribe',
+                event_id: LanRsvp['event_id']
+            };
+            $.post(LanRsvp.ajaxurl, data, function (response) {
+                if (response.length > 0) {
+                    $('div.lanrsvp-authenticated-message').html(response);
+                } else {
+                    var isHardRefresh = false;
+                    location.reload(isHardRefresh);
                 }
             });
         });
@@ -96,8 +119,10 @@
                 if (response.length > 0) {
                     $('div.lanrsvp-authenticate-message').html(response);
                 } else {
+                    var isHardRefresh = false;
+                    location.reload(isHardRefresh);
+                    /*
                     $('div#lanrsvp-authenticate').hide();
-
                     data = {
                         action: 'get_authenticated',
                         event_id : LanRsvp.event_id,
@@ -108,6 +133,7 @@
                         $('div#lanrsvp-authenticated').replace(response);
                         $('div#lanrsvp-authenticated').show();
                     });
+                    */
                 }
             });
         }
@@ -165,7 +191,7 @@
                     var html = "<p>Registration successful. Check your e-mail account to activate your account.</p>";
                     $('div.lanrsvp-authenticate-message').html(html);
                     $('div#lanrsvp-authenticate > form').hide();
-                    $('form.lanrsvp-login-form').show();
+                    $('form.lanrsvp-activate-form').show();
                 }
             });
         }

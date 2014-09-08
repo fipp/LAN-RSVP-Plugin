@@ -3,12 +3,16 @@
 $event_id = null;
 $event = null;
 $has_seatmap = true;
+$is_active = false;
 if ( isset ( $_REQUEST['event_id'] ) ) {
     $event_id = $_REQUEST['event_id'];
-    $event = DB::get_event( $event_id );
+    $event = DB::get_event( $event_id);
     if ( is_array($event)) {
-        if ($event['has_seatmap'] == 0) {
+        if ($event['has_seatmap'] == '0') {
             $has_seatmap = false;
+        }
+        if ($event['is_active'] == '1') {
+            $is_active = true;
         }
     } else {
         $event_id = false;
@@ -19,29 +23,54 @@ if ( isset ( $_REQUEST['event_id'] ) ) {
 
 <?php
 
-if (isset($data['event_id'])) {
-    echo "<h1>Update event</h1>";
+if (isset($event_id)) {
+    echo sprintf("<h1>%s</h1>",$event['event_title']);
 } else {
     echo "<h1>Create new event</h1>";
 }
 ?>
-
-<form method="post" class="lanrsvp-event-form">
+<div id="lanrsvp">
+    <form method="post" class="lanrsvp-event-form">
     <table class="form-table">
         <?php if ($event_id): ?>
+            <tr>
+                <th scope="row"><label for="lanrsvp-event-id">Event ID</label></th>
+                <td>
+                    <input
+                        name="lanrsvp-event-id"
+                        type="text"
+                        class="regular-text code"
+                        value="<?php echo $event['event_id'];  ?>"
+                        disabled
+                        />
+                </td>
+            </tr>
+        <?php endif ?>
         <tr>
-            <th scope="row"><label for="lanrsvp-event-id">Event ID</label></th>
+            <th scope="row">Status</th>
             <td>
-                <input
-                    name="lanrsvp-event-id"
-                    type="text"
-                    class="regular-text code"
-                    value="<?php echo $event['event_id'];  ?>"
-                    disabled
-                    />
+                <fieldset><legend class="screen-reader-text"><span>Status</span></legend>
+                    <label title="open">
+                        <input
+                            type="radio"
+                            name="lanrsvp-event-status"
+                            value="open"
+                            <?php echo ($is_active ? 'checked' : ''); ?>
+                            />
+                        <span>Registration open</span>
+                    </label> <br />
+                    <label title="closed">
+                        <input
+                            type="radio"
+                            name="lanrsvp-event-status"
+                            value="closed"
+                            <?php echo ($is_active ? '' : 'checked'); ?>
+                            />
+                        <span>Registration closed</span>
+                    </label>
+                </fieldset>
             </td>
         </tr>
-        <?php endif ?>
         <tr>
             <th scope="row"><label for="lanrsvp-event-title">Event Title</label></th>
             <td>
@@ -86,42 +115,42 @@ if (isset($data['event_id'])) {
         <tr>
             <th scope="row">Registration type</th>
             <?php if ($event_id) { ?>
-            <td>
-                <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
-                    <label title="type">
-                        <input
-                            type="radio"
-                            checked
-                            name="lanrsvp-event-type"
-                            value="<?php echo ($has_seatmap ? "seatmap" : "general"); ?>"
-                            disabled
-                            />
-                        <span><?php echo ($has_seatmap ? "With seat map" : "Without seat map"); ?></span>
-                    </label>
-                </fieldset>
-            </td>
+                <td>
+                    <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
+                        <label title="type">
+                            <input
+                                type="radio"
+                                checked
+                                name="lanrsvp-event-type"
+                                value="<?php echo ($has_seatmap ? "seatmap" : "general"); ?>"
+                                disabled
+                                />
+                            <span><?php echo ($has_seatmap ? "With seat map" : "Without seat map"); ?></span>
+                        </label>
+                    </fieldset>
+                </td>
             <?php } else { ?>
-            <td>
-                <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
-                    <label title="seatmap">
-                        <input
-                            type="radio"
-                            name="lanrsvp-event-type"
-                            value="seatmap"
-                            checked
-                            />
-                        <span>With seat map</span>
-                    </label> <br />
-                    <label title="general">
-                        <input
-                            type="radio"
-                            name="lanrsvp-event-type"
-                            value="general"
-                            />
-                        <span>Without seat map</span>
-                    </label>
-                </fieldset>
-            </td>
+                <td>
+                    <fieldset><legend class="screen-reader-text"><span>Registration type</span></legend>
+                        <label title="seatmap">
+                            <input
+                                type="radio"
+                                name="lanrsvp-event-type"
+                                value="seatmap"
+                                checked
+                                />
+                            <span>With seat map</span>
+                        </label> <br />
+                        <label title="general">
+                            <input
+                                type="radio"
+                                name="lanrsvp-event-type"
+                                value="general"
+                                />
+                            <span>Without seat map</span>
+                        </label>
+                    </fieldset>
+                </td>
             <?php } ?>
         </tr>
         <tr>
@@ -186,26 +215,26 @@ if (isset($data['event_id'])) {
             Click on the grid below to draw the initial seat map. Click on the cells to change their status.
         </p>
 
-	    <div id="lanrsvp-seatmap">
-		    <h2>Seat map</h2>
-		    <div id="lanrsvp-seatmap-info">
-			    <p>Hover over the map below to see information about each seat.</p>
-			    <table>
-				    <tr>
-					    <th colspan="2">
-						    Seat <span id="lanrsvp-seat-row">0</span> - <span id="lanrsvp-seat-column">0</span>
-					    </th>
-				    </tr>
-				    <tr>
-					    <td width="50px">Status:</td>
-					    <td id="lanrsvp-seat-status">Not available.</td>
-				    </tr>
-			    </table>
-		    </div>
-		    <div id="lanrsvp-seatmap-map">
-			    <canvas></canvas>
-		    </div>
-	    </div>
+        <div id="lanrsvp-seatmap">
+            <h2>Seat map</h2>
+            <div id="lanrsvp-seatmap-info">
+                <p>Hover over the map below to see information about each seat.</p>
+                <table>
+                    <tr>
+                        <th colspan="2">
+                            Seat <span id="lanrsvp-seat-row">0</span> - <span id="lanrsvp-seat-column">0</span>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td width="50px">Status:</td>
+                        <td id="lanrsvp-seat-status">Not available.</td>
+                    </tr>
+                </table>
+            </div>
+            <div id="lanrsvp-seatmap-map">
+                <canvas></canvas>
+            </div>
+        </div>
 
     </div>
 
@@ -214,11 +243,13 @@ if (isset($data['event_id'])) {
     <p class="submit">
         <input
             type="submit"
-            name="submit"
-            id="submit"
             class="button button-primary"
             value="<?php echo $event_id ? 'Update event' : 'Create event'; ?>"
             />
+        <?php if ($event_id): ?>
+            <button id="<?php echo $event_id; ?>" class="delete-event button button-primary">Delete Event</button>
+        <?php endif; ?>
     </p>
 
-</form>
+    </form>
+</div>

@@ -1,3 +1,31 @@
-.wp-list-table .column-start_date,
-.wp-list-table .column-end_date { width: 175px; }
+
 .lanrsvp-error { color: red; }
+#lanrsvp th { text-align: left; }
+
+#lanrsvp table.lanrsvp-events th,
+#lanrsvp table.lanrsvp-events td,
+#lanrsvp table.lanrsvp-users th,
+#lanrsvp table.lanrsvp-users td {
+    font-size: 11px;
+}
+
+#lanrsvp table.lanrsvp-events th#start_date,
+#lanrsvp table.lanrsvp-events th#end_date,
+#lanrsvp table.lanrsvp-users th#registration_date {
+    width: 140px;
+}
+
+#lanrsvp table.lanrsvp-events th#event_id,
+#lanrsvp table.lanrsvp-events th#is_active,
+#lanrsvp table.lanrsvp-users th#user_id,
+#lanrsvp table.lanrsvp-users th#is_activated,
+#lanrsvp table.lanrsvp-attendees th#user_id,
+#lanrsvp table.lanrsvp-attendees th#delete_attendee {
+    width: 50px;
+}
+
+#lanrsvp table.lanrsvp-users textarea,
+#lanrsvp table.lanrsvp-attendees textarea {
+    font-size: 10px;
+    width: 100%;
+}

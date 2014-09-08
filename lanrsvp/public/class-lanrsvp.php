@@ -87,11 +87,14 @@ class LanRsvp {
         add_action('wp_ajax_activate_user', array( $this, 'activate_user'));
         add_action('wp_ajax_nopriv_activate_user', array( $this, 'activate_user'));
 
-        add_action('wp_ajax_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
-        add_action('wp_ajax_nopriv_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
+        //add_action('wp_ajax_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
+        //add_action('wp_ajax_nopriv_get_authenticated', array( $this, 'ajax_get_authenticated' ) );
 
-        add_action('wp_ajax_sign_up', array( $this, 'ajax_sign_up' ) );
-        add_action('wp_ajax_nopriv_sign_up', array( $this, 'ajax_sign_up' ) );
+        add_action('wp_ajax_sign_up', array( $this, 'sign_up' ) );
+        add_action('wp_ajax_nopriv_sign_up', array( $this, 'sign_up' ) );
+
+        add_action('wp_ajax_unsubscribe', array( $this, 'unsubscribe' ) );
+        add_action('wp_ajax_nopriv_unsubscribe', array( $this, 'unsubscribe' ) );
 
     }
 
@@ -366,10 +369,12 @@ class LanRsvp {
 
     function shortcode_handler_lanrsvp ( $attrs ) {
 
+        echo "<h1>LAN Party Events Plugin</h1>";
         if ( isset($attrs['event_id']) && is_numeric($attrs['event_id'])) {
             $event_id = $attrs['event_id'];
             $event = DB::get_event($event_id);
             if (is_array($event)) {
+                $event_is_active = $event['is_active'];
                 $has_seatmap = ($event['has_seatmap'] == 0 ? false : true);
 
                 wp_enqueue_script($this->plugin_slug . '-public-script');
@@ -385,16 +390,19 @@ class LanRsvp {
                 wp_enqueue_style($this->plugin_slug .'-public-styles');
 
                 $is_authenticated = session_id() && isset($_SESSION['lanrsvp-userid']);
-                $is_signed_up = false;
-                $attendee = false;
-                if ($is_authenticated) {
-                    $attendee_raw = DB::get_attendee($event_id, $_SESSION['lanrsvp-userid']);
-                    if (is_array($attendee_raw)) {
-                        $attendee = $attendee_raw;
-                        $is_signed_up = true;
+                $can_sign_up = false;
+                if ($event_is_active) {
+                    $is_signed_up = false;
+                    $attendee = false;
+                    if ($is_authenticated) {
+                        $attendee_raw = DB::get_attendee($event_id, $_SESSION['lanrsvp-userid']);
+                        if (is_array($attendee_raw)) {
+                            $attendee = $attendee_raw;
+                            $is_signed_up = true;
+                        }
                     }
                 }
-                $can_sign_up = false;
+
 
                 $attendees = DB::get_attendees($event_id);
                 $attendees_count = count($attendees);
@@ -415,14 +423,14 @@ class LanRsvp {
 
                     // If the current requester is authenticated, not signed up, and there are still free
                     // seats, flag that he can sign up
-                    if ($is_authenticated && !$is_signed_up && $places_left > 0) {
+                    if ($event_is_active && $is_authenticated && !$is_signed_up && $places_left > 0) {
                         $can_sign_up = true;
                     }
 
                     $seatmap_data = [
                         'event_id'        => $event_id,
                         'isAdmin'         => false,
-	                    'canSignUp'         => $can_sign_up,
+	                    'canSignUp'       => $can_sign_up,
                         'seats'           => $seats
                     ];
 
@@ -438,7 +446,7 @@ class LanRsvp {
                     $places_left = $event['max_attendees'] - $attendees_count;
                 }
 
-                if ($is_authenticated && !$is_signed_up) {
+                if ($event_is_active && $is_authenticated && !$is_signed_up) {
                     if (is_null($places_left) || $places_left > 0) {
                         $can_sign_up = true;
                     }
@@ -446,22 +454,30 @@ class LanRsvp {
 
                 echo '<div id="lanrsvp">';
                 include_once('views/event-details.php');
-                include_once('views/authenticate.php' );
-                self::get_authenticated($event_id, $has_seatmap, $is_authenticated, $is_signed_up,
-                    $can_sign_up, $attendee);
+                if ($event_is_active) {
+                    if ($is_authenticated) {
+                        include_once('views/authenticated.php');
+                    } else {
+                        include_once('views/authenticate.php');
+                    }
+                }
+                if ($has_seatmap) {
+                    include_once('views/seatmap.php');
+                }
+                //self::get_authenticated($event_id, $has_seatmap, $is_authenticated, $is_signed_up, $can_sign_up, $attendee);
    	            include_once('views/attendees.php');
-                include_once('views/seatmap.php');
 	            echo '</div>';
 
                 return;
             } else {
-                return "<h1>LAN RSVP Plugin</h1><p>Specified event id $event_id is not valid.</p>";
+                return "<p>Specified event id $event_id is not valid.</p>";
             }
         } else {
-            return '<h1>LAN RSVP Plugin:<p>Could not recognize shortcode. Valid example: [lanrsvp event_id="12"].</p>';
+            return '<p>Could not recognize shortcode. Valid example: [lanrsvp event_id="12"].</p>';
         }
     }
 
+    /*
     public static function ajax_get_authenticated() {
         try {
             $_REQUEST = self::checkAndTrimParams(['event_id', 'has_seatmap'], $_REQUEST);
@@ -508,6 +524,7 @@ class LanRsvp {
 
         include_once('views/authenticated.php' );
     }
+    */
 
     public static function sign_up() {
         try {
@@ -515,17 +532,17 @@ class LanRsvp {
             if (isset($_SESSION['lanrsvp-userid'])) {
                 $user_id = $_SESSION['lanrsvp-userid'];
             } else {
-                throw new Exception("User not logged in! Try again, or contact system administrator.");
+                throw new Exception("You are not logged in! Try again, or contact system administrator.");
             }
 
             $_REQUEST = self::checkAndTrimParams(['event_id','seat_row','seat_col'], $_REQUEST);
             $event_id = $_REQUEST['event_id'];
             $seat_row = $_REQUEST['seat_row'];
-            if ($seat_row) {
+            if (!is_numeric($seat_row)) {
                 $seat_row = null;
             }
             $seat_col = $_REQUEST['seat_col'];
-            if ($seat_col) {
+            if (!is_numeric($seat_col)) {
                 $seat_col = null;
             }
 
@@ -533,6 +550,25 @@ class LanRsvp {
         } catch (Exception $e) {
             echo $e->getMessage();
         }
+        die();
+    }
+
+    public static function unsubscribe() {
+        try {
+            $user_id = null;
+            if (isset($_SESSION['lanrsvp-userid'])) {
+                $user_id = $_SESSION['lanrsvp-userid'];
+            } else {
+                throw new Exception("You are not logged in! Try again, or contact system administrator.");
+            }
+
+            $_REQUEST = self::checkAndTrimParams(['event_id'], $_REQUEST);
+            $event_id = $_REQUEST['event_id'];
+            DB::delete_attendee($event_id, $user_id);
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+        die();
     }
 
     function login() {
@@ -667,7 +703,7 @@ HTML;
         die();
     }
 
-    private static function checkAndTrimParams($parameterList, $source) {
+    public static function checkAndTrimParams($parameterList, $source) {
         foreach ($parameterList as $param) {
             if (!isset($source[$param])) {
                 $errorMsg = "Parameter $param is not given! Try again or contact the system administrator";

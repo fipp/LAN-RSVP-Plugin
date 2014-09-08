@@ -179,12 +179,22 @@
 
                         if (isAdmin && mouseIsDown && !refreshingCells) {
                             if (toggleSeatStatus(currentCell)) {
-                                paintSeat(currentCell, seats[row][col]['status']);
+                                paintSeat(currentCell, getSeatStatus(currentCell));
                             }
 
                         }
                     }
                 }
+            }
+        }
+
+        function getSeatStatus(seat) {
+            var row = seat[0];
+            var col = seat[1];
+            if (seats[row] !== undefined && seats[row][col] !== undefined) {
+                return seats[row][col]['status'];
+            } else {
+                return undefined;
             }
         }
 
@@ -195,8 +205,7 @@
                     var row = currentCell[0];
                     var col = currentCell[1];
                     if (toggleSeatStatus(currentCell)) {
-                        var status2 = seats[row][col]['status'];
-                        paintSeat(currentCell, seats[row][col]['status']);
+                        paintSeat(currentCell, getSeatStatus(currentCell));
                     }
                 }
             }
@@ -245,7 +254,7 @@
             if (isAdmin) {
                 // If we already have painted this cell during this
                 // mousedown, we don't paint it again.
-                if (paintedOnMouseDown[row] !== undefined && paintedOnMouseDown[row][column] !== undefined) {
+                if (paintedOnMouseDown[row] !== undefined && paintedOnMouseDown[row][col] !== undefined) {
                     return;
                 }
             }
@@ -289,7 +298,7 @@
                 if (paintedOnMouseDown[row] === undefined) {
                     paintedOnMouseDown[row] = Array();
                 }
-                paintedOnMouseDown[row][column] = true;
+                paintedOnMouseDown[row][col] = true;
             }
 
             return hasToggled;

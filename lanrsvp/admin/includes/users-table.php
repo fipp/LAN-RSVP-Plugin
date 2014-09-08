@@ -7,8 +7,8 @@ class Users_Table extends WP_List_Table_Copy {
      */
     function __construct() {
         parent::__construct( array(
-            'singular'=> 'wp_list_text_link', // Singular label
-            'plural' => 'wp_list_test_links', // plural label, also this well be one of the table css class
+            'singular'=> 'lanrsvp-user', // Singular label
+            'plural' => 'lanrsvp-users', // plural label, also this well be one of the table css class
             'ajax'   => false // We won't support Ajax for this table
         ) );
 
@@ -39,8 +39,11 @@ class Users_Table extends WP_List_Table_Copy {
     function get_columns(){
         $columns = array(
             'user_id'           => 'ID',
+            'is_activated'      => 'Active',
             'email'             => 'E-mail Address',
-            'full_name'         => 'Full Name',
+            'first_name'        => 'First Name',
+            'last_name'         => 'Last Name',
+            'comment'           => 'Comment',
             'registration_date' => 'Registration Date'
         );
         return $columns;
@@ -55,7 +58,8 @@ class Users_Table extends WP_List_Table_Copy {
         $sortable_columns = array(
             'user_id'           => array('user_id',false),
             'email'             => array('email',false),
-            'full_name'         => array('full_name',false),
+            'first_name'        => array('first_name',false),
+            'last_name'         => array('first_name',false),
             'registration_date' => array('registration_date',false),
         );
         return $sortable_columns;
@@ -94,10 +98,21 @@ class Users_Table extends WP_List_Table_Copy {
         switch( $column_name ) {
             case 'user_id':
             case 'email':
-            case 'full_name':
+            case 'first_name':
+            case 'last_name':
+                return $item[ $column_name];
             case 'registration_date';
-                return $item[ $column_name ];
-                //return date( 'l d/m/y H:i', $timestamp );
+                $val = $item[ $column_name ];
+                if ($val == 0) {
+                    return "None";
+                }
+                $timestamp = strtotime( $val );
+                return date( 'l d/m/y H:i', $timestamp );
+            case 'is_activated':
+                return ( $item[ $column_name ] == '0' ) ? 'No' : 'Yes';
+            case 'comment':
+                $text = $item[ $column_name ];
+                return "<textarea placeholder='Admin notes about this user ...'>$text</textarea>";
             default:
                 return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
         }

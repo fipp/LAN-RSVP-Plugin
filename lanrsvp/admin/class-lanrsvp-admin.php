@@ -96,7 +96,7 @@ class LanRsvpAdmin {
         add_action( 'wp_ajax_create_event', array( $this, 'create_event' ) );
         add_action( 'wp_ajax_update_event', array( $this, 'update_event' ) );
         add_action( 'wp_ajax_delete_event', array( $this, 'delete_event' ) );
-        add_action( 'wp_ajax_get_attendee', array( $this, 'get_attendee' ) );
+        add_action( 'wp_ajax_delete_attendee', array( $this, 'delete_attendee' ) );
 
     }
 
@@ -188,6 +188,14 @@ class LanRsvpAdmin {
                 LanRsvpAdmin::VERSION
             );
 
+            if (isset($_REQUEST['event_id'])) {
+                wp_localize_script(
+                    $this->plugin_slug . '-admin-script',
+                    'LanRsvpAdmin',
+                    array('event_id' => $_REQUEST['event_id'])
+                );
+            }
+
             if (substr( $screen->id, -strlen( $this->plugin_slug . '_event' ) ) == $this->plugin_slug . '_event') {
                 wp_enqueue_script(
                     $this->plugin_slug . '-seatmap-script',
@@ -234,7 +242,7 @@ class LanRsvpAdmin {
             __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The text to be displayed for this menu item
             'manage_options',                               // Which type of users can see this menu item
             $this->plugin_slug,                             // The unique ID - that is, the slug - for this menu item
-            array( $this, 'display_plugin_admin_page' )     // The name of the function to call when rendering this menu's page
+            array( $this, 'display_plugin_events_page' )     // The name of the function to call when rendering this menu's page
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
 
@@ -284,15 +292,17 @@ class LanRsvpAdmin {
         );
         $this->plugin_screen_hook_suffix[$hookname] = 0;
 
-    }
+        // Attendees
+        $hookname = add_submenu_page(
+            null,
+            __( 'LAN RSVP Plugin - Attendees', $this->plugin_slug ),
+            __( 'Attendees', $this->plugin_slug ),
+            'manage_options',
+            $this->plugin_slug . '_attendees',
+            array( $this, 'display_plugin_attendees_page' )
+        );
+        $this->plugin_screen_hook_suffix[$hookname] = 0;
 
-    /**
-     * Render the overview page for this plugin.
-     *
-     * @since    1.0.0
-     */
-    public function display_plugin_admin_page() {
-        include_once( 'views/overview.php' );
     }
 
     /**
@@ -331,8 +341,23 @@ class LanRsvpAdmin {
         include_once('views/users.php');
     }
 
-
-
+    /**
+     * Render the list attendees page for this plugin.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_attendees_page() {
+        if (isset($_REQUEST['event_id']) && is_numeric($_REQUEST['event_id'])) {
+            $event_id = $_REQUEST['event_id'];
+            $event = DB::get_event($event_id);
+            if (is_array($event)) {
+                $has_seatmap = $event['has_seatmap'] == '1' ? true : false;
+                $attendees = DB::get_attendees($event_id);
+                $attendeesTable = new Attendees_Table($attendees, $is_admin = true, $has_seatmap);
+                include_once('views/attendees.php');
+            }
+        }
+    }
 
     public function register_settings() {
 
@@ -379,9 +404,16 @@ class LanRsvpAdmin {
         die();
     }
 
-    public function get_attendee() {
-        LanRsvp::get_attendee();
+    public function delete_attendee() {
+        try {
+            $_REQUEST = LanRsvp::checkAndTrimParams(['event_id', 'user_id'], $_REQUEST);
+            DB::delete_attendee($_REQUEST['event_id'],$_REQUEST['user_id']);
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+        die();
     }
+
 
     /**
      * Add settings action link to the plugins page.

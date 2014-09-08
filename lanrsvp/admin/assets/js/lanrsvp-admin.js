@@ -28,6 +28,7 @@
             data['action']  = ('lanrsvp-event-id' in data ? 'update_event' : 'create_event');
 
             data['lanrsvp-event-type'] = $('input[name=lanrsvp-event-type]:checked', '.lanrsvp-event-form').val();
+            data['lanrsvp-event-status'] = $('input[name=lanrsvp-event-status]:checked', '.lanrsvp-event-form').val();
 
             if (data['lanrsvp-event-type'] === 'seatmap' && window.seats !== undefined) {
                 // Crop the seats which are outside the limits
@@ -65,10 +66,10 @@
         });
 
         // Handling event deletion
-        $(".remove-event").click(function(e) {
+        $(".delete-event").click(function(e) {
             e.preventDefault();
             var id = $(this).attr('id');
-            var ok = confirm('Are you sure you want to delete this event (' + id + ')? This action cannot be undone.');
+            var ok = confirm('Are you sure you want to delete this event along with all its attendees?');
             if (ok) {
                 $.post( ajaxurl, { action: 'delete_event', event_id: id }, function(response) {
                     if (response.length > 0) {
@@ -79,5 +80,29 @@
                 });
             }
         });
+
+        // Handling attendee deletion
+        $("a.delete-attendee").click(function(e) {
+            e.preventDefault();
+            var user_id = $(this).attr('id');
+            var ok = confirm('Are you sure you want to delete this attendee?');
+            if (ok) {
+                var data = {
+                    action: 'delete_attendee',
+                    user_id: user_id,
+                    event_id: LanRsvpAdmin.event_id
+                };
+
+                $.post( ajaxurl, data, function(response) {
+                    if (response.length > 0) {
+                        alert(response);
+                    } else {
+                        window.location.replace('?page=lanrsvp_attendee&event_id=' + LanRsvpAdmin.event_id);
+                    }
+                });
+            }
+        });
+
+
     });
 }(jQuery));

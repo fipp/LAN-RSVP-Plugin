@@ -28,6 +28,9 @@ class DB {
                 registration_date TIMESTAMP DEFAULT NOW(),
                 activation_code CHAR(32) NOT NULL UNIQUE,
                 is_activated ENUM('0','1') NOT NULL DEFAULT '0',
+                registered_ip_remote_addr CHAR(45) NOT NULL,
+                registered_ip_x_forwarded_for CHAR(45),
+                comment TEXT,
                 PRIMARY KEY  (user_id)
             );",
             $wpdb->prefix . self::USER_TABLE_NAME
@@ -35,9 +38,10 @@ class DB {
 
         $event_sql = sprintf("CREATE TABLE %s (
                 event_id MEDIUMINT NOT NULL AUTO_INCREMENT,
-                is_active TINYINT(1) NOT NULL,
+                is_active ENUM('0','1') NOT NULL DEFAULT '0',
                 event_title VARCHAR(64) NOT NULL,
                 start_date DATETIME NOT NULL,
+                description TEXT,
                 end_date DATETIME,
                 min_attendees SMALLINT NOT NULL,
                 max_attendees SMALLINT NOT NULL,
@@ -51,6 +55,9 @@ class DB {
                 event_id MEDIUMINT NOT NULL,
                 user_id MEDIUMINT NOT NULL,
                 registration_date TIMESTAMP DEFAULT NOW(),
+                registered_ip_remote_addr CHAR(45) NOT NULL,
+                registered_ip_x_forwarded_for CHAR(45),
+                comment TEXT,
                 PRIMARY KEY (event_id, user_id),
                 FOREIGN KEY (event_id) REFERENCES %s (event_id),
                 FOREIGN KEY (user_id) REFERENCES %s (user_id)
@@ -66,12 +73,9 @@ class DB {
                 seat_row SMALLINT NOT NULL,
                 seat_column SMALLINT NOT NULL,
                 PRIMARY KEY (event_id, seat_row, seat_column),
-                FOREIGN KEY (event_id) REFERENCES %s (event_id),
-                FOREIGN KEY (user_id) REFERENCES %s (user_id)
-
+                FOREIGN KEY (event_id, user_id) REFERENCES %s (event_id, user_id)
             );",
             $wpdb->prefix . self::SEAT_TABLE_NAME,
-            $wpdb->prefix . self::EVENT_TABLE_NAME,
             $wpdb->prefix . self::ATTENDEE_TABLE_NAME
         );
 
@@ -80,6 +84,13 @@ class DB {
         dbDelta($event_sql);
         dbDelta($attendee_sql);
         dbDelta($seat_sql);
+
+        if (self::DEBUG) {
+            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,end_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','Rindal LAN Oktober 2014','2014-10-10 18:00:00','2014-10-12 16:00:00','0','0','1')");
+            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','Lonely Compo','2014-10-11 12:00:00','0','1','0')");
+            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','CS Compo','2014-10-11 16:00:00','4','16','0')");
+            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('0','FIFA Compo','2014-10-12 12:00:00','2','20','1')");
+        }
     }
 
     public static function uninstall() {
@@ -111,8 +122,13 @@ class DB {
             'last_name' =>  $user['lastName'],
             'email' =>  $user['email'],
             'password' => wp_hash_password($user['password']),
-            'activation_code' => $user['activation_code']
+            'activation_code' => $user['activation_code'],
+            'registered_ip_remote_addr' => $_SERVER['REMOTE_ADDR']
         ];
+
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $data['registered_ip_x_forwarded_for'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
 
         $wpdb->insert($wpdb->prefix . self::USER_TABLE_NAME, $data, array('%s', '%s', '%s', '%s', '%s'));
 
@@ -134,25 +150,89 @@ class DB {
 
         try {
             $wpdb->query('START TRANSACTION');
-            $wpdb->insert(
+
+            $data = [
+                'event_id' => $event_id,
+                'user_id' => $user_id,
+                'registered_ip_remote_addr' => $_SERVER['REMOTE_ADDR']
+            ];
+
+            $format = ['%d','%d','%s'];
+
+            if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $data['registered_ip_x_forwarded_for'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                array_push( $format, '%s');
+            }
+
+
+            $rowsUpdated = $wpdb->insert(
+                $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
+                $data,
+                $format
+            );
+
+            if (!$rowsUpdated) {
+                throw new Exception("System error - could not sign up user. Please contact the system administrator.");
+            }
+
+            if ($has_seatmap) {
+                $wpdb->update(
+                    $rowsUpdated = $wpdb->prefix . self::SEAT_TABLE_NAME,
+                    array(
+                        'user_id' => $user_id
+                    ),
+                    array(
+                        'event_id' => $event_id,
+                        'seat_row' => $seat_row,
+                        'seat_column' => $seat_col
+                    ),
+                    array('%s'),
+                    array('%s','%s','%s')
+                );
+
+                if (!$rowsUpdated) {
+                    throw new Exception("System error - could not assign seat. Please contact the system administrator.");
+                }
+            }
+            $wpdb->query('COMMIT');
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            throw $e;
+        }
+    }
+
+    public static function delete_attendee($event_id, $user_id) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+        try {
+            $wpdb->query('START TRANSACTION');
+
+            $event = self::get_event($event_id);
+            if ($event['has_seatmap']) {
+                $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+                $rowsUpdated = $wpdb->query(
+                    $wpdb->prepare(
+                        "UPDATE $seat_table_name SET user_id = NULL WHERE event_id = %s AND user_id = %s",
+                        $event_id,
+                        $user_id
+                    ));
+
+                if (!$rowsUpdated) {
+                    throw new Exception("System error - could not remove attendee seat. Please contact the system administrator.");
+                }
+            }
+
+            $rowsUpdated = $wpdb->delete(
                 $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
                 array(
                     'event_id' => $event_id,
                     'user_id' => $user_id
                 ),
-                array('%d','%d')
+                array('%s','%s')
             );
 
-            if ($has_seatmap) {
-                $wpdb->insert(
-                    $wpdb->prefix . self::SEAT_TABLE_NAME,
-                    array(
-                        'event_id' => $event_id,
-                        'seat_row' => $seat_row,
-                        'seat_col' => $seat_col
-                    ),
-                    array('%s','%s','%s')
-                );
+            if (!$rowsUpdated) {
+                throw new Exception("System error - could not remove attendee. Please contact the system administrator.");
             }
 
             $wpdb->query('COMMIT');
@@ -199,6 +279,7 @@ class DB {
               b.email,
               c.seat_row,
               c.seat_column,
+              a.comment,
               a.registration_date
              FROM
               $attendee_table_name a
@@ -214,8 +295,10 @@ class DB {
         global $wpdb;
 
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT a.user_id, b.first_name, b.last_name, b.email, a.event_id, a.registration_date
-              FROM wp_lanrsvp_attendee a JOIN wp_lanrsvp_user b ON a.user_id = b.user_id
+            "SELECT a.user_id, b.first_name, b.last_name, b.email, a.event_id, a.registration_date, c.seat_row, c.seat_column
+              FROM wp_lanrsvp_attendee a
+                JOIN wp_lanrsvp_user b ON a.user_id = b.user_id
+                LEFT JOIN wp_lanrsvp_seat c ON a.event_id = c.event_id AND a.user_id = c.user_id
               WHERE a.event_id = %d AND a.user_id = %d",
             $event_id,
             $user_id
@@ -227,10 +310,12 @@ class DB {
         global $wpdb;
 
         $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
+
         return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $event_table_name WHERE event_id = %d",
             $event_id
         ), ARRAY_A);
+
     }
 
     public static function get_event_seatmap($event_id) {
@@ -253,11 +338,13 @@ class DB {
 
         $event_table_name = $wpdb->prefix . self::EVENT_TABLE_NAME;
         $attendee_table_name = $wpdb->prefix . self::ATTENDEE_TABLE_NAME;
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
 
         $res = $wpdb->get_results(
             "SELECT
               a.*,
-              (SELECT COUNT(*) FROM $attendee_table_name WHERE event_id = a.event_id) AS 'attendees_registered'
+              (SELECT COUNT(*) FROM $attendee_table_name WHERE event_id = a.event_id) AS 'attendees_registered',
+              (SELECT COUNT(*) FROM $seat_table_name WHERE event_id = a.event_id) AS 'total_seats'
             FROM
               $event_table_name a;",
             ARRAY_A
@@ -271,7 +358,7 @@ class DB {
         global $wpdb;
 
         $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
-        return $wpdb->get_results("SELECT user_id, email, full_name, registration_date FROM $user_table_name", ARRAY_A);
+        return $wpdb->get_results("SELECT user_id, is_activated, email, first_name, last_name, registration_date, comment FROM $user_table_name", ARRAY_A);
     }
 
     public static function get_user($user_id = null, $email = null) {
@@ -334,12 +421,13 @@ class DB {
         try {
             $type = $e['lanrsvp-event-type'];
 
-            $format = array('%s', '%s', '%s', '%d');
+            $format = array('%s', '%s', '%s', '%s', '%d');
             $data = array(
                 'event_title' => $e['lanrsvp-event-title'],
                 'start_date' => $e['lanrsvp-event-startdate'],
+                'is_active' => ($e['lanrsvp-event-status'] == 'open' ? '1' :'0'),
                 'has_seatmap' => ($type == 'seatmap' ? '1' : '0'),
-                'min_attendees' => intval($e['lanrsvp-event-minattendees']),
+                'min_attendees' => intval($e['lanrsvp-event-minattendees'])
             );
 
             if ($type == 'general') {
