@@ -1,6 +1,6 @@
 <?php
 /**
- * LAN RSVP Plugin
+ * LAN Party Events Plugin
  *
  * @package   lanrsvp
  * @author    Terje Ness Andersen <terje.andersen@gmail.com>
@@ -621,7 +621,7 @@ class LanRsvp {
             $newPassword = substr(str_shuffle($chars),0,8);
 
             if (DB::set_password(null, $_REQUEST['email'], $newPassword) == 1) {
-                $subject = "LAN RSVP Plugin - Your new password";
+                $subject = "LAN Party Events Plugin - Your new password";
                 $site_url = site_url();
                 $message = <<<HTML
 Dear $firstName $lastName!
@@ -633,7 +633,7 @@ The new password is: $newPassword
 Please note that this password is encrypted in our database, and not stored as clear text.
 
 Best Regards,
-The LAN RSVP Plugin, on behalf of $site_url.
+The LAN Party Events Plugin, on behalf of $site_url.
 HTML;
                 wp_mail( $email, $subject, $message );
             }
@@ -668,7 +668,7 @@ HTML;
             $_REQUEST['activation_code'] = $activation_code;
             DB::create_user($_REQUEST);
 
-            $subject = "LAN RSVP Plugin - Your activation code";
+            $subject = "LAN Party Events Plugin - Your activation code";
             $site_url = site_url();
             $message = <<<HTML
 Dear $firstName $lastName!
@@ -682,7 +682,7 @@ $activation_code
 If this was not you, you can safely disregard this message, the account will not be usable.
 
 Best Regards,
-The LAN RSVP Plugin, on behalf of $site_url.
+The LAN Party Events Plugin, on behalf of $site_url.
 HTML;
             wp_mail( $email, $subject, $message );
         } catch (Exception $e) {

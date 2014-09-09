@@ -1,8 +1,8 @@
 <?php
 /**
- * LAN RSVP Plugin
+ * LAN Party Events Plugin
  *
- * A RSVP Plugin for LAN parties.
+ * An event registration system for LAN Parties.
  *
  * @package   lanrsvp
  * @author    Terje Ness Andersen <terje.andersen@gmail.com>
@@ -10,9 +10,9 @@
  * @copyright 2014 Terje Ness Andersen
  *
  * @wordpress-plugin
- * Plugin Name:       LAN RSVP Plugin
- * Description:       A RSVP Plugin for LAN parties.
- * Version:           1.0.0
+ * Plugin Name:       LAN Party Events Plugin
+ * Description:       An event registration system for LAN Parties.
+ * Version:           0.1
  * Author:            Terje Ness Andersen
  * Author URI:        http://it.terjeandersen.net/
  * License:           GPL-2.0+

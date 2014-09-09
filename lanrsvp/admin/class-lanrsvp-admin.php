@@ -241,8 +241,8 @@ class LanRsvpAdmin {
 
         // Main menu
         $hookname = add_menu_page(
-            __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The title to be displayed in the browser window for this page.
-            __( 'LAN RSVP Plugin', $this->plugin_slug ),    // The text to be displayed for this menu item
+            __( 'LAN Party Events', $this->plugin_slug ),    // The title to be displayed in the browser window for this page.
+            __( 'LAN Party Events', $this->plugin_slug ),    // The text to be displayed for this menu item
             'manage_options',                               // Which type of users can see this menu item
             $this->plugin_slug,                             // The unique ID - that is, the slug - for this menu item
             array( $this, 'display_plugin_events_page' )     // The name of the function to call when rendering this menu's page
@@ -252,7 +252,7 @@ class LanRsvpAdmin {
         // Events
         $hookname = add_submenu_page(
             $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
-            __( 'LAN RSVP Plugin - Events', $this->plugin_slug ),   // The value used to populate the browser's title bar when the menu page is active
+            __( 'LAN Party Events - Events', $this->plugin_slug ),   // The value used to populate the browser's title bar when the menu page is active
             __( 'Events', $this->plugin_slug ),                     // The label of this submenu item displayed in the menu
             'manage_options',                                       // What roles are able to access this submenu item
             $this->plugin_slug,                                     // The ID used to represent this submenu item
@@ -264,7 +264,7 @@ class LanRsvpAdmin {
         /*
         $hookname = add_submenu_page(
             $this->plugin_slug,                                     // The ID of the top-level menu page to which this submenu item belongs
-            __( 'LAN RSVP Plugin - Settings', $this->plugin_slug ), // The value used to populate the browser's title bar when the menu page is active
+            __( 'LAN Party Events Plugin - Settings', $this->plugin_slug ), // The value used to populate the browser's title bar when the menu page is active
             __( 'Settings', $this->plugin_slug ),                   // The label of this submenu item displayed in the menu
             'manage_options',                                       // What roles are able to access this submenu item
             $this->plugin_slug . '_settings',                       // The ID used to represent this submenu item
@@ -276,7 +276,7 @@ class LanRsvpAdmin {
         // Create/Edit Event Page
         $hookname = add_submenu_page(
             null, // Parent slug == null so that it won't show up in the menu
-            __( 'LAN RSVP Plugin - Create Event', $this->plugin_slug ),
+            __( 'LAN Party Events - Create Event', $this->plugin_slug ),
             __( 'Create Event', $this->plugin_slug ),
             'manage_options',
             $this->plugin_slug . '_event',
@@ -287,7 +287,7 @@ class LanRsvpAdmin {
         // Users
         $hookname = add_submenu_page(
             $this->plugin_slug,
-            __( 'LAN RSVP Plugin - Users', $this->plugin_slug ),
+            __( 'LAN Party Events - Users', $this->plugin_slug ),
             __( 'Users', $this->plugin_slug ),
             'manage_options',
             $this->plugin_slug . '_users',
@@ -298,7 +298,7 @@ class LanRsvpAdmin {
         // Attendees
         $hookname = add_submenu_page(
             null,
-            __( 'LAN RSVP Plugin - Attendees', $this->plugin_slug ),
+            __( 'LAN Party Events - Attendees', $this->plugin_slug ),
             __( 'Attendees', $this->plugin_slug ),
             'manage_options',
             $this->plugin_slug . '_attendees',
@@ -309,7 +309,7 @@ class LanRsvpAdmin {
         // User event history
         $hookname = add_submenu_page(
             null,
-            __( 'LAN RSVP Plugin - User', $this->plugin_slug ),
+            __( 'LAN Party Events - User', $this->plugin_slug ),
             __( 'User', $this->plugin_slug ),
             'manage_options',
             $this->plugin_slug . '_user',
@@ -487,7 +487,8 @@ class LanRsvpAdmin {
 
         return array_merge(
             array(
-                'settings' => '<a href="' . admin_url( 'options-general.php?page=' . $this->plugin_slug ) . '">' . __( 'Settings', $this->plugin_slug ) . '</a>'
+                //'settings' => '<a href="' . admin_url( 'options-general.php?page=' . $this->plugin_slug ) . '">' . __( 'Settings', $this->plugin_slug ) . '</a>',
+                //'delete' => '<a href="' . admin_url( 'options-general.php?page=' . $this->plugin_slug ) . '">' . __( 'Delete', $this->plugin_slug ) . '</a>'
             ),
             $links
         );

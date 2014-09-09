@@ -12,7 +12,7 @@ class DB {
     const ATTENDEE_TABLE_NAME = 'lanrsvp_attendee';
     const SEAT_TABLE_NAME = 'lanrsvp_seat';
 
-    const DEBUG = true;
+    const DEBUG = false;
 
     public static function install() {
         /** @var $wpdb WPDB */
@@ -37,7 +37,7 @@ class DB {
         );
 
         $event_sql = sprintf("CREATE TABLE %s (
-                event_id MEDIUMINT NOT NULL AUTO_INCREMENT,
+                event_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 is_active ENUM('0','1') NOT NULL DEFAULT '0',
                 event_title VARCHAR(64) NOT NULL,
                 start_date DATETIME NOT NULL,
@@ -50,6 +50,7 @@ class DB {
             );",
             $wpdb->prefix . self::EVENT_TABLE_NAME
         );
+
 
         $attendee_sql = sprintf("CREATE TABLE %s (
                 event_id MEDIUMINT UNSIGNED NOT NULL,
@@ -80,18 +81,13 @@ class DB {
             $wpdb->prefix . self::ATTENDEE_TABLE_NAME
         );
 
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($user_sql);
         dbDelta($event_sql);
         dbDelta($attendee_sql);
         dbDelta($seat_sql);
 
-        if (self::DEBUG) {
-            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,end_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','Rindal LAN Oktober 2014','2014-10-10 18:00:00','2014-10-12 16:00:00','0','0','1')");
-            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','Lonely Compo','2014-10-11 12:00:00','0','1','0')");
-            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('1','CS Compo','2014-10-11 16:00:00','4','16','0')");
-            $wpdb->query("INSERT INTO wp_lanrsvp_event (is_active,event_title,start_date,min_attendees,max_attendees,has_seatmap) VALUES ('0','FIFA Compo','2014-10-12 12:00:00','2','20','1')");
-        }
     }
 
     public static function uninstall() {
