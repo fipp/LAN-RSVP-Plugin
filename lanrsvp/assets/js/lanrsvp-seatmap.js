@@ -111,7 +111,7 @@
 
             context = canvas.getContext("2d");
 
-            context.fillStyle="#dddddd";
+            context.fillStyle="#efefef";
             context.fillRect(
                 0,
                 0,
@@ -124,7 +124,6 @@
                 gridWidth + 1 - 2 * cellSize,
                 gridHeight + 1 - 2 * cellSize
             );
-            context.fillStyle="#333333";
 
             for (var x = 0; x <= gridHeight; x += cellSize) {
                 context.moveTo(0.5 + x, 0);
@@ -143,7 +142,7 @@
                 context.lineTo(gridWidth, 0.5 + z);
             }
 
-            context.strokeStyle = "black";
+            context.strokeStyle = "#666666";
             context.stroke();
         }
 
@@ -329,11 +328,13 @@
                     );
                     break;
                 case 'busy':
-                    if (isAdmin) {
-                        context.fillStyle = "#9C1616";
-                    } else {
+
+                    if (row === chosenSeat[0] && col === chosenSeat[1]) {
                         context.fillStyle = "#000000";
+                    } else {
+                        context.fillStyle = "#9C1616";
                     }
+
                     context.fillRect(
                         col * cellSize + 1,
                         row * cellSize + 1,

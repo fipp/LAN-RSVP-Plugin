@@ -40,6 +40,7 @@ class Events_Table extends WP_List_Table_Copy {
             'event_title'           => 'Event Title',
             'start_date'            => 'Start Date',
             'end_date'              => 'End Date',
+            'price'                 => 'Price',
             'attendees_registered'  => 'Attendees',
             'min_attendees'         => 'Min. Attendees',
             'max_attendees'         => 'Max. Attendees',
@@ -61,6 +62,7 @@ class Events_Table extends WP_List_Table_Copy {
             'attendees_registered'  => array('attendees_registered',false),
             'start_date'            => array('start_date',false),
             'end_date'              => array('end_date',false),
+            'price'                 => array('price',false),
             'min_attendees'         => array('min_attendees',false),
             'max_attendees'         => array('max_attendees',false),
             //'has_seatmap'           => array('has_seatmap',false),
@@ -85,6 +87,7 @@ class Events_Table extends WP_List_Table_Copy {
                 $result = $timestamp_a - $timestamp_b;
                 break;
             case 'event_id':
+            case 'price':
             case 'attendees_registered':
             case 'min_attendees':
                 $result = $a[$orderby] - $b[$orderby];
@@ -128,6 +131,8 @@ class Events_Table extends WP_List_Table_Copy {
                 );
             case 'event_id':
             case 'min_attendees':
+                return $item[ $column_name ];
+            case 'price':
                 return $item[ $column_name ];
             case 'attendees_registered':
                 return sprintf(

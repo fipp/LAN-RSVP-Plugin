@@ -113,6 +113,19 @@ if (isset($event_id)) {
             </td>
         </tr>
         <tr>
+            <th scope="row"><label for="lanrsvp-event-price">Price</label></th>
+            <td>
+                <input
+                    name="lanrsvp-event-price"
+                    type="text"
+                    pattern="\d+"
+                    placeholder=""
+                    class="regular-text code"
+                    value="<?php echo (isset($event['price']) ? $event['price'] : '')  ?>"
+                    />
+            </td>
+        </tr>
+        <tr>
             <th scope="row">Registration type</th>
             <?php if ($event_id) { ?>
                 <td>
@@ -160,7 +173,6 @@ if (isset($event_id)) {
                     type="number"
                     name="lanrsvp-event-minattendees"
                     min="0"
-                    max="100"
                     step="1"
                     placeholder="Optional"
                     value="<?php echo (isset($event['min_attendees']) ? $event['min_attendees'] : 0)  ?>"
@@ -174,7 +186,6 @@ if (isset($event_id)) {
                     type="number"
                     name="lanrsvp-event-maxattendees"
                     min="0"
-                    max="100"
                     step="1"
                     placeholder="Optional"
                     value="<?php echo (isset($event['max_attendees']) ? $event['max_attendees'] : 0)  ?>"

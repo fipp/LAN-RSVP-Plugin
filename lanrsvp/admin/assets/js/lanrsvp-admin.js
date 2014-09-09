@@ -106,14 +106,20 @@
         // Handling attendees comments
         $('#saveAttendees').click(function() {
             var data = {
-                action: 'save_attendee_comments',
+                action: 'save_attendees',
                 event_id: LanRsvpAdmin.event_id,
-                attendee_comments: {}
+                users: {}
             };
             $.each($('textarea.attendee-comment'), function() {
                 var user_id = $(this).attr('id');
                 var comment = $(this).val();
-                data['attendee_comments'][user_id] = comment;
+                data['users'][user_id] = {};
+                data['users'][user_id]['comment'] = comment;
+            });
+            $.each($('select.attendee-has_paid'), function() {
+                var user_id = $(this).attr('id');
+                var has_paid = $(this).find('option:selected').val();
+                data['users'][user_id]['has_paid'] = has_paid;
             });
             $.post( ajaxurl, data, function(response) {
                 if (response.length > 0) {

@@ -20,7 +20,7 @@ class DB {
         global $wpdb;
 
         $user_sql = sprintf("CREATE TABLE %s (
-                user_id MEDIUMINT NOT NULL AUTO_INCREMENT,
+                user_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 first_name VARCHAR(32) NOT NULL,
                 last_name VARCHAR(32) NOT NULL,
                 email VARCHAR(128) NOT NULL UNIQUE,
@@ -41,22 +41,23 @@ class DB {
                 is_active ENUM('0','1') NOT NULL DEFAULT '0',
                 event_title VARCHAR(64) NOT NULL,
                 start_date DATETIME NOT NULL,
-                description TEXT,
                 end_date DATETIME,
-                min_attendees SMALLINT NOT NULL,
-                max_attendees SMALLINT NOT NULL,
+                min_attendees SMALLINT UNSIGNED NOT NULL,
+                max_attendees SMALLINT UNSIGNED NOT NULL,
                 has_seatmap ENUM('0','1') NOT NULL,
+                price SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                 PRIMARY KEY  (event_id)
             );",
             $wpdb->prefix . self::EVENT_TABLE_NAME
         );
 
         $attendee_sql = sprintf("CREATE TABLE %s (
-                event_id MEDIUMINT NOT NULL,
-                user_id MEDIUMINT NOT NULL,
+                event_id MEDIUMINT UNSIGNED NOT NULL,
+                user_id MEDIUMINT UNSIGNED NOT NULL,
                 registration_date TIMESTAMP DEFAULT NOW(),
                 registered_ip_remote_addr CHAR(45) NOT NULL,
                 registered_ip_x_forwarded_for CHAR(45),
+                has_paid ENUM('0','1') NOT NULL DEFAULT '0',
                 comment TEXT,
                 PRIMARY KEY (event_id, user_id),
                 FOREIGN KEY (event_id) REFERENCES %s (event_id),
@@ -68,10 +69,10 @@ class DB {
         );
 
         $seat_sql = sprintf("CREATE TABLE %s (
-                event_id MEDIUMINT NOT NULL,
-                user_id MEDIUMINT,
-                seat_row SMALLINT NOT NULL,
-                seat_column SMALLINT NOT NULL,
+                event_id MEDIUMINT UNSIGNED NOT NULL,
+                user_id MEDIUMINT UNSIGNED,
+                seat_row SMALLINT UNSIGNED NOT NULL,
+                seat_column SMALLINT UNSIGNED NOT NULL,
                 PRIMARY KEY (event_id, seat_row, seat_column),
                 FOREIGN KEY (event_id, user_id) REFERENCES %s (event_id, user_id)
             );",
@@ -280,7 +281,8 @@ class DB {
               c.seat_row,
               c.seat_column,
               a.comment,
-              a.registration_date
+              a.registration_date,
+              a.has_paid
              FROM
               $attendee_table_name a
               JOIN $user_table_name b ON (a.user_id = b.user_id)
@@ -305,22 +307,33 @@ class DB {
         ), ARRAY_A);
     }
 
-    public static function set_attendee_comment($event_id, $user_id, $comment) {
+    public static function update_attendee($event_id, $user_id, $comment = null, $has_paid = null) {
         /** @var $wpdb WPDB */
         global $wpdb;
 
+        $data = [];
+        $format = [];
+        if (!is_null($comment)) {
+            $data['comment'] = $comment;
+            array_push($format,'%s');
+        }
+        if (!is_null($has_paid)) {
+            $data['has_paid'] = $has_paid;
+            array_push($format,'%s');
+        }
+
         $rowsUpdated = $wpdb->update(
             $wpdb->prefix . self::ATTENDEE_TABLE_NAME,
-            array('comment' => $comment),
+            $data,
             array(
                 'event_id'  => $event_id,
                 'user_id'   => $user_id
             ),
-            array('%s'),
+            $format,
             array('%d','%d')
         );
 
-        if (!$rowsUpdated) {
+        if ($rowsUpdated === false) {
             throw new Exception("System error. Could not set attendee comment. Please contact plugin author.");
         }
     }
@@ -484,10 +497,11 @@ class DB {
         try {
             $type = $e['lanrsvp-event-type'];
 
-            $format = array('%s', '%s', '%s', '%s', '%d');
+            $format = array('%s', '%s', '%d', '%s', '%s', '%d');
             $data = array(
                 'event_title' => $e['lanrsvp-event-title'],
                 'start_date' => $e['lanrsvp-event-startdate'],
+                'price' => $e['lanrsvp-event-price'],
                 'is_active' => ($e['lanrsvp-event-status'] == 'open' ? '1' :'0'),
                 'has_seatmap' => ($type == 'seatmap' ? '1' : '0'),
                 'min_attendees' => intval($e['lanrsvp-event-minattendees'])

@@ -1,18 +1,20 @@
 <?php
 
-class Attendees_Table extends WP_List_Table_Copy {
+class Attendees_Table extends WP_List_Table_Copy
+{
 
     /**
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
      */
-    function __construct($attendees, $admin = false, $has_seatmap = false) {
-        parent::__construct( array(
-            'singular'=> 'lanrsvp-attendee', // Singular label
+    function __construct($attendees, $admin = false, $has_seatmap = false)
+    {
+        parent::__construct(array(
+            'singular' => 'lanrsvp-attendee', // Singular label
             'plural' => 'lanrsvp-attendees', // plural label, also this well be one of the table css class
-            'ajax'   => false, // We won't support Ajax for this table
+            'ajax' => false, // We won't support Ajax for this table
             'screen' => 'interval-list' // hook suffix
-        ) );
+        ));
 
         if ($has_seatmap) {
             foreach ($attendees as $key => $attendee) {
@@ -36,12 +38,13 @@ class Attendees_Table extends WP_List_Table_Copy {
      *  - $sortable defines if the table can be sorted by this column.
      * Finally the method assigns the example data to the class' data representation variable items.
      */
-    function prepare_items() {
+    function prepare_items()
+    {
         $columns = $this->get_columns();
         $hidden = array();
         $sortable = $this->get_sortable_columns();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort( $this->attendees, array( &$this, 'usort_reorder' ) );
+        usort($this->attendees, array(&$this, 'usort_reorder'));
         $this->items = $this->attendees;
     }
 
@@ -49,7 +52,8 @@ class Attendees_Table extends WP_List_Table_Copy {
      * The method get_columns() is needed to label the columns on the top and bottom of the table. The keys in the
      * array have to be the same as in the data array otherwise the respective columns aren't displayed.
      */
-    function get_columns(){
+    function get_columns()
+    {
         $columns = [];
 
         if ($this->isAdmin) {
@@ -67,6 +71,7 @@ class Attendees_Table extends WP_List_Table_Copy {
         }
 
         if ($this->isAdmin) {
+            $columns['has_paid'] = 'Paid';
             $columns['comment'] = 'Comment';
         }
 
@@ -79,38 +84,46 @@ class Attendees_Table extends WP_List_Table_Copy {
      * If the value is true the column is assumed to be ordered ascending, if the value is false the column is
      * assumed descending or unordered.
      */
-    function get_sortable_columns() {
+    function get_sortable_columns()
+    {
         $sortable_columns = array(
-            'user_id'           => array('user_id',false),
-            'full_name'         => array('full_name',false),
-            'email'             => array('email',false),
-            'seat'              => array('seat',false),
-            'registration_date' => array('registration_date',false),
+            'user_id' => array('user_id', false),
+            'full_name' => array('full_name', false),
+            'email' => array('email', false),
+            'seat' => array('seat', false),
+            'has_paid' => array('has_paid', false),
+            'registration_date' => array('registration_date', false),
         );
         return $sortable_columns;
     }
 
-    function usort_reorder( $a, $b ) {
+    function usort_reorder($a, $b)
+    {
         // If no sort, default to user id
-        $orderby = ( ! empty( $_GET['orderby'] ) ) ? $_GET['orderby'] : 'registration_date';
+        $orderby = (!empty($_GET['orderby'])) ? $_GET['orderby'] : 'registration_date';
 
         // If no order, default to asc
-        $order = ( ! empty($_GET['order'] ) ) ? $_GET['order'] : 'desc';
+        $order = (!empty($_GET['order'])) ? $_GET['order'] : 'desc';
 
         // Determine sort order
         $result = 0;
         switch ($orderby) {
             case 'user_id':
+            case 'has_paid':
                 $result = $a[$orderby] - $b[$orderby];
                 break;
             case 'seat':
-            case 'full_name':
             case 'email':
-                $result = strcmp( $a[$orderby], $b[$orderby] );
+                $result = strcmp($a[$orderby], $b[$orderby]);
+                break;
+            case 'full_name':
+                $full_name_a = $a['first_name'] . ' ' . $a['last_name'];
+                $full_name_b = $b['first_name'] . ' ' . $b['last_name'];
+                $result = strcmp($full_name_a, $full_name_b);
                 break;
             case 'registration_date':
-                $timestamp_a = strtotime( $a[$orderby] );
-                $timestamp_b = strtotime( $b[$orderby] );
+                $timestamp_a = strtotime($a[$orderby]);
+                $timestamp_b = strtotime($b[$orderby]);
                 $result = $timestamp_a - $timestamp_b;
                 break;
             default:
@@ -118,7 +131,7 @@ class Attendees_Table extends WP_List_Table_Copy {
         }
 
         // Send final sort direction to usort
-        return ( $order === 'asc' ) ? $result : -$result;
+        return ($order === 'asc') ? $result : -$result;
     }
 
     /*
@@ -126,31 +139,39 @@ class Attendees_Table extends WP_List_Table_Copy {
      * column_booktitle. There has to be such a method for every defined column. To avoid the need to create a method
      * for each column there is column_default that will process any column for which no special method is defined:
      */
-    function column_default( $item, $column_name ) {
-        switch( $column_name ) {
+    function column_default($item, $column_name)
+    {
+        switch ($column_name) {
             case 'user_id':
             case 'email':
             case 'seat':
-                return $item[ $column_name ];
+                return $item[$column_name];
             case 'full_name':
-                return $item['first_name'] . ' ' .$item['last_name'];
+                return $item['first_name'] . ' ' . $item['last_name'];
                 break;
             case 'registration_date';
-                $timestamp = strtotime( $item[ $column_name ] );
-                return date( 'D d.m, H:i', $timestamp );
+                $timestamp = strtotime($item[$column_name]);
+                return date('D d.m, H:i', $timestamp);
             case 'comment':
                 return sprintf(
-                   '<textarea id="%d" class="attendee-comment" placeholder="Admin notes about this attendee ...">%s</textarea>',
+                    '<textarea id="%d" class="attendee-comment" placeholder="Admin notes about this attendee ...">%s</textarea>',
                     $item['user_id'],
-                    $item[ $column_name ]
+                    $item[$column_name]
                 );
             case 'delete_attendee':
                 return sprintf(
                     '<a href="#" id="%d" class="delete-attendee" style="color: red;"><i class="fa fa-times fa-lg"></i></a>',
                     $item['user_id']
                 );
+            case 'has_paid':
+                $has_paid = ($item[$column_name] == '1' ? true : false);
+                $html = sprintf('<select class="attendee-has_paid" id="%s">', $item['user_id']);
+                $html .= sprintf("<option value='1' %s>Yes</option>", ($has_paid ? 'selected' : ''));
+                $html .= sprintf("<option value='0' %s>No</option>", ($has_paid ? '' : 'selected'));
+                $html .= '</select>';
+                return $html;
             default:
-                return print_r( $item, true ) ; // Show the whole array for troubleshooting purposes
+                return print_r($item, true); // Show the whole array for troubleshooting purposes
         }
     }
 }

@@ -99,7 +99,7 @@ class LanRsvpAdmin {
         add_action( 'wp_ajax_delete_attendee', array( $this, 'delete_attendee' ) );
 
         add_action( 'wp_ajax_save_user_comments', array( $this, 'save_user_comments' ) );
-        add_action( 'wp_ajax_save_attendee_comments', array( $this, 'save_attendee_comments' ) );
+        add_action( 'wp_ajax_save_attendees', array( $this, 'save_attendees' ) );
 
     }
 
@@ -443,18 +443,21 @@ class LanRsvpAdmin {
         die();
     }
 
-    public function save_attendee_comments() {
+    public function save_attendees() {
         try {
             if (isset($_REQUEST['event_id']) && is_numeric($_REQUEST['event_id'])) {
                 $event_id = $_REQUEST['event_id'];
-                if (isset($_REQUEST['attendee_comments']) && is_array($_REQUEST['attendee_comments'])) {
-                    foreach ($_REQUEST['attendee_comments'] as $user_id => $comment) {
-                        DB::set_attendee_comment($event_id, $user_id, $comment);
+                if (isset($_REQUEST['users']) && is_array($_REQUEST['users'])) {
+                    foreach ($_REQUEST['users'] as $user_id => $data) {
+                        LanRsvp::_log($user_id);
+                        $comment = (isset($data['comment']) ? $data['comment'] : null);
+                        $has_paid = (isset($data['has_paid']) ? $data['has_paid'] : null);
+                        DB::update_attendee($event_id, $user_id, $comment, $has_paid);
                     }
                 }
             }
         } catch (Exception $e) {
-            $e->getMessage();
+            echo $e->getMessage();
         }
 
         die();

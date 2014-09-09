@@ -27,6 +27,11 @@ if ($event['min_attendees'] > 0) {
     $min_attendees_row = sprintf("<tr><td>Min. attendees needed</td><td>%d</td></tr>", $event['min_attendees']);
 }
 
+$price_text = $event['price'];
+if ($price_text == '0') {
+    $price_text = 'Free';
+}
+
 echo <<<HTML
 <div id="lanrsvp-event-details">
 <h2>Event details</h2>
@@ -35,6 +40,7 @@ echo <<<HTML
 	    <tr><td>Status</td><td>{$status_text}</td></tr>
 	    <tr><td>Start date</td><td>{$start_date}</td></tr>
 	    {$end_date_row}
+	    <tr><td>Price</td><td>{$price_text}</td></tr>
 	    {$min_attendees_row}
 	    <tr><td>Places taken</td><td>{$attendees_count}</td></tr>
 	    {$places_left_row}
