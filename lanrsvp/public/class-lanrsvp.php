@@ -201,7 +201,12 @@ class LanRsvp {
 
     }
 
-    /**
+    public static function uninstall( ) {
+        DB::uninstall();
+    }
+
+
+        /**
      * Fired when a new site is activated with a WPMU environment.
      *
      * @since    1.0.0
@@ -259,7 +264,6 @@ class LanRsvp {
      * @since    1.0.0
      */
     private static function single_deactivate() {
-        DB::uninstall();
     }
 
     /**
@@ -535,6 +539,11 @@ class LanRsvp {
                 throw new Exception("You are not logged in! Try again, or contact system administrator.");
             }
 
+            $user = DB::get_user($user_id);
+            if (!is_array($user) || $user['is_activated'] == '0') {
+                throw new Exception("User does not exist, or the user is not activated.");
+            }
+
             $_REQUEST = self::checkAndTrimParams(['event_id','seat_row','seat_col'], $_REQUEST);
             $event_id = $_REQUEST['event_id'];
             $seat_row = $_REQUEST['seat_row'];
@@ -582,7 +591,7 @@ class LanRsvp {
 
             $user = DB::get_user(null,$email);
             $errorMessage = "Wrong email/password, or the account is not activated (check your email). <br /> Try again or contact the system administrator";
-            if (!is_array($user)) {
+            if (!is_array($user) || $user['is_activated'] == '0') {
                 throw new Exception($errorMessage);
             }
 

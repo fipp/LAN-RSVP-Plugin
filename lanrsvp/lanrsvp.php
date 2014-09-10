@@ -55,6 +55,7 @@ require_once( plugin_dir_path( __FILE__ ) . 'public/class-lanrsvp.php' );
  */
 register_activation_hook( __FILE__, array( 'LanRsvp', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'LanRsvp', 'deactivate' ) );
+// register_uninstall_hook( __FILE__, array( 'LanRsvp', 'uninstall' ) );
 
 add_action( 'plugins_loaded', array( 'LanRsvp', 'get_instance' ) );
 
