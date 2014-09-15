@@ -559,12 +559,29 @@ class DB {
             if (is_numeric($event_id)) {
                 if ($type == 'seatmap') {
                     if (is_array($e['lanrsvp-event-seatmap'])) {
-                        self::delete_seatmap($event_id);
+                        $seatmap_old = DB::get_event_seatmap($event_id);
+                        $seatmap_new = $e['lanrsvp-event-seatmap'];
 
-                        foreach ($e['lanrsvp-event-seatmap'] as $row => $cols) {
+                        // Delete all the seats that does not have an owner
+                        $seatmap_old_takenseats = [];
+                        foreach ($seatmap_old as $seat) {
+                            $seat_row = $seat['seat_row'];
+                            $seat_column = $seat['seat_column'];
+                            if (!is_numeric($seat['user_id'])) {
+                                DB::delete_seat($event_id,$seat_row,$seat_column);
+                            } else {
+                                $seatmap_old_takenseats[$seat_row][$seat_column] = true;
+                            }
+                        }
+
+                        // Insert all
+                        foreach ($seatmap_new as $row => $cols) {
                             if (is_array($cols)) {
                                 foreach ($cols as $col => $cell) {
-                                    if (is_array($cell) && isset($cell['status'])) {
+                                    if (is_array($cell) &&
+                                        isset($cell['status']) &&
+                                        !isset($seatmap_old_takenseats[$row][$col])
+                                    ){
                                         $seat_data = array(
                                             'event_id' => $event_id,
                                             'seat_row' => $row,
@@ -616,6 +633,23 @@ class DB {
             /** @var $wpdb WPDB */
             global $wpdb;
             $wpdb->delete($wpdb->prefix . self::SEAT_TABLE_NAME, array('event_id' => $event_id), array('%d'));
+        }
+    }
+
+    private static function delete_seat($event_id, $seat_row, $seat_column) {
+        if (isset($event_id) && is_numeric($event_id) && isset($seat_row) && is_numeric($seat_row) &&
+            isset($seat_column) && is_numeric($seat_column)
+        ){
+            /** @var $wpdb WPDB */
+            global $wpdb;
+            $wpdb->delete(
+                $wpdb->prefix . self::SEAT_TABLE_NAME,
+                array(
+                    'event_id' => $event_id,
+                    'seat_row' => $seat_row,
+                    'seat_column' => $seat_column
+                ),
+                array('%d','%d','%d'));
         }
     }
 
