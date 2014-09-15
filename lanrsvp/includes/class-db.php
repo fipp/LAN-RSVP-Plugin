@@ -111,7 +111,7 @@ class DB {
         );
 
         if ($existing['COUNT(*)'] > 0) {
-            return "The user already exists.";
+            throw new Exception("This email address already exists.");
         }
 
         $data = [
@@ -141,8 +141,18 @@ class DB {
 
         $event = DB::get_event($event_id);
         $has_seatmap = ($event['has_seatmap'] == '1' ? true : false);
-        if ($has_seatmap && (is_null($seat_row) || is_null($seat_col))) {
-            throw new Exception("Event $event_id has a seat map, but no seat was given during sign up.");
+        if ($has_seatmap) {
+            if (is_null($seat_row) || is_null($seat_col)) {
+                throw new Exception("Event $event_id has a seat map, but no seat was given during sign up.");
+            }
+            $seat_owner = DB::get_seat_owner($event_id, $seat_row, $seat_col);
+            if (is_numeric($seat_owner['user_id'])) {
+                throw new Exception("Another user has already taken this seat! Please try again.");
+            }
+            $attendee = DB::get_attendee($event_id, $user_id);
+            if (is_numeric($attendee['user_id'])) {
+                throw new Exception("You are already signed up for this event!");
+            }
         }
 
         try {
@@ -377,6 +387,20 @@ class DB {
             WHERE event_id = %d",
             $event_id
         ), ARRAY_A);
+    }
+
+    public static function get_seat_owner($event_id, $seat_row, $seat_col) {
+        /** @var $wpdb WPDB */
+        global $wpdb;
+
+        $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT user_id FROM $seat_table_name WHERE seat_row = %d AND seat_column = %d",
+                $seat_row,
+                $seat_col
+            )
+        , ARRAY_A);
     }
 
     public static function get_events() {
