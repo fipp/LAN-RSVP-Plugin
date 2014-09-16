@@ -382,7 +382,7 @@ class DB {
         $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
         $user_table_name = $wpdb->prefix . self::USER_TABLE_NAME;
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT a.*, b.user_id, b.first_name, b.last_name
+            "SELECT a.seat_row, a.seat_column, a.user_id, b.user_id, b.first_name, b.last_name
             FROM $seat_table_name a LEFT JOIN $user_table_name b ON a.user_id = b.user_id
             WHERE event_id = %d",
             $event_id

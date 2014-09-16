@@ -96,6 +96,11 @@ class LanRsvp {
         add_action('wp_ajax_unsubscribe', array( $this, 'unsubscribe' ) );
         add_action('wp_ajax_nopriv_unsubscribe', array( $this, 'unsubscribe' ) );
 
+        add_action('wp_ajax_get_seatmap', array( $this, 'get_seatmap' ) );
+        add_action('wp_ajax_nopriv_get_seatmap', array( $this, 'get_seatmap' ) );
+
+
+
     }
 
     /**
@@ -432,6 +437,7 @@ class LanRsvp {
                     }
 
                     $seatmap_data = [
+                        'ajaxurl'         => admin_url('admin-ajax.php'),
                         'event_id'        => $event_id,
                         'isAdmin'         => false,
 	                    'canSignUp'       => $can_sign_up,
@@ -577,6 +583,15 @@ class LanRsvp {
         } catch (Exception $e) {
             echo $e->getMessage();
         }
+        die();
+    }
+
+    public static function get_seatmap() {
+        try {
+            $_REQUEST = LanRsvp::checkAndTrimParams(['event_id'], $_REQUEST);
+            $seats = DB::get_event_seatmap($_REQUEST['event_id']);
+            echo json_encode($seats);
+        } catch (Exception $e) {}
         die();
     }
 

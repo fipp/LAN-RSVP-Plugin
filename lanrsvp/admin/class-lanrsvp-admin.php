@@ -101,6 +101,8 @@ class LanRsvpAdmin {
         add_action( 'wp_ajax_save_user_comments', array( $this, 'save_user_comments' ) );
         add_action( 'wp_ajax_save_attendees', array( $this, 'save_attendees' ) );
 
+        add_action( 'wp_ajax_get_seatmap', array( $this, 'get_seatmap' ) );
+
     }
 
     /**
@@ -224,6 +226,15 @@ class LanRsvpAdmin {
             }
         }
 
+    }
+
+    public static function get_seatmap() {
+        try {
+            $_REQUEST = LanRsvp::checkAndTrimParams(['event_id'], $_REQUEST);
+            $seats = DB::get_event_seatmap($_REQUEST['event_id']);
+            echo json_encode($seats);
+        } catch (Exception $e) {}
+        die();
     }
 
     /**
