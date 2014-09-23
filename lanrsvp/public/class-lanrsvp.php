@@ -78,6 +78,9 @@ class LanRsvp {
         add_action('wp_ajax_login', array( $this, 'login'));
         add_action('wp_ajax_nopriv_login', array( $this, 'login'));
 
+        add_action('wp_ajax_logout', array( $this, 'logout'));
+        add_action('wp_ajax_nopriv_logout', array( $this, 'logout'));
+
         add_action('wp_ajax_reset_password', array( $this, 'reset_password'));
         add_action('wp_ajax_nopriv_reset_password', array( $this, 'reset_password'));
 
@@ -487,55 +490,6 @@ class LanRsvp {
         }
     }
 
-    /*
-    public static function ajax_get_authenticated() {
-        try {
-            $_REQUEST = self::checkAndTrimParams(['event_id', 'has_seatmap'], $_REQUEST);
-            self::get_authenticated($_REQUEST['event_id'],$_REQUEST['has_seatmap']);
-        } catch (Exception $e) {
-            echo "There was an internal error. Please contact the system administrator.";
-        }
-
-        die();
-    }
-
-    public static function get_authenticated(
-        $event_id, $has_seatmap, $is_authenticated = null, $is_signed_up = null, $can_sign_up = null, $attendee = null)
-    {
-        if (is_null($is_authenticated)) {
-            $is_authenticated = session_id() && isset($_SESSION['lanrsvp-userid']);
-        }
-
-        if (is_null($can_sign_up)) {
-            $attendees_count = DB::get_attendees_count($event_id);
-            $seats_count = DB::get_seats_count($event_id);
-
-            if ( !is_null($seats_count) && $seats_count - $attendees_count > 0) {
-                $can_sign_up = true;
-            } else {
-                $max_attendees = DB::get_max_attendees($event_id);
-                if ($max_attendees == 0 || $max_attendees - $attendees_count > 0) {
-                    $can_sign_up = true;
-                }
-            }
-        }
-
-        $user = null;
-        if ($is_authenticated) {
-            $user = DB::get_user($_SESSION['lanrsvp-userid']);
-            if (is_null($attendee) || is_null($is_signed_up)) {
-                $attendee_raw = DB::get_attendee($event_id, $_SESSION['lanrsvp-userid']);
-                if (is_array($attendee_raw)) {
-                    $attendee = $attendee_raw;
-                    $is_signed_up = true;
-                }
-            }
-        }
-
-        include_once('views/authenticated.php' );
-    }
-    */
-
     public static function sign_up() {
         try {
             $user_id = null;
@@ -605,22 +559,37 @@ class LanRsvp {
             $password_hash = null;
 
             $user = DB::get_user(null,$email);
-            $errorMessage = "Wrong email/password, or the account is not activated (check your email). <br /> Try again or contact the system administrator";
-            if (!is_array($user) || $user['is_activated'] == '0') {
-                throw new Exception($errorMessage);
+            if (!is_array($user)) {
+                throw new Exception("User account '$email' not found. Did you enter the correct email address?");
+            }
+
+            if ($user['is_activated'] == '0') {
+                throw new Exception("User account '$email' not activated. Please follow the activation instructions sent
+                to your email address.'");
             }
 
             $password_hash = $user['password'];
 
             $wp_hasher = new PasswordHash(8, TRUE);
             if ( !$wp_hasher->CheckPassword( $password_plain, $password_hash )) {
-                throw new Exception($errorMessage);
+                throw new Exception("Wrong password for user account '$email'.");
             }
 
             $_SESSION['lanrsvp-userid'] = $user['user_id'];
         } catch (Exception $e) {
             echo $e->getMessage();
         }
+        die();
+    }
+
+    function logout() {
+        if (session_id()) {
+            unset($_SESSION['lanrsvp-userid']);
+            if (!is_array($_SESSION) || count($_SESSION) == 0) {
+                session_destroy();
+            }
+        }
+        echo "";
         die();
     }
 
@@ -631,11 +600,11 @@ class LanRsvp {
             $email = $_REQUEST['email'];
             $user = DB::get_user(null, $email);
             if (!is_array($user)) {
-                throw new Exception("The user could not be found. Please provide an existing email address.");
+                throw new Exception("The user account '$email' could not be found. Please provide an existing account.");
             }
 
             if ($user['is_activated'] != '1') {
-                throw new Exception("The user is not activated. Please activate your account first.");
+                throw new Exception("The user account '$email' is not activated. Please activate your account first.");
             }
 
             $firstName = $user['first_name'];
@@ -675,13 +644,11 @@ HTML;
             );
 
             if ($_REQUEST['email'] != $_REQUEST['emailConfirm']) {
-                $errorMsg = "The email addresses do not match! Try again or contact the system administrator";
-                throw new Exception($errorMsg);
+                throw new Exception('The email addresses do not match! Please try again.');
             }
 
             if ($_REQUEST['password'] != $_REQUEST['passwordConfirm']) {
-                $errorMsg = "The email addresses do not match! Try again or contact the system administrator";
-                throw new Exception($errorMsg);
+                throw new Exception('The passwords do not match! Please try again.');
             }
 
             $firstName = $_REQUEST['firstName'];

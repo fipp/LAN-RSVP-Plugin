@@ -111,7 +111,7 @@ class DB {
         );
 
         if ($existing['COUNT(*)'] > 0) {
-            throw new Exception("This email address already exists.");
+            throw new Exception(sprintf("User account '%s' already exists. Please specify another email address.",$user['email']));
         }
 
         $data = [
@@ -249,24 +249,40 @@ class DB {
         }
     }
 
-    public static function activate_user($user) {
+    public static function activate_user($data) {
         /** @var $wpdb WPDB */
         global $wpdb;
+
+        $email = $data['email'];
+        $activation_code = $data['activationCode'];
+
+        $user = DB::get_user(null, $email);
+
+        if (!is_array($user)) {
+            throw new Exception("The user account '$email' could not be found. Please provide an existing account.");
+        }
+
+        if ($user['is_activated'] == '1') {
+            throw new Exception("The user account '$email' is already activated.'");
+        }
+
+        if ($user['activation_code'] !== $activation_code) {
+            throw new Exception("The activation code for user account '$email'' is incorrect.");
+        }
 
         $res = $wpdb->update(
             $wpdb->prefix . self::USER_TABLE_NAME,
             array('is_activated' => '1'),
             array(
-                'email' => $user['email'],
-                'activation_code' => $user['activationCode']
+                'email' => $email,
+                'activation_code' => $activation_code
             ),
             array('%s'),
             array('%s', '%s')
         );
 
         if ($res == false || $res == 0) {
-            $errorMessage = "Activation failed. Did you enter the correct code? If so, please contact the system administrator.";
-            throw new Exception($errorMessage);
+            throw new Exception('System error - could not activate account. Please contact the system administrator.');
         }
 
     }

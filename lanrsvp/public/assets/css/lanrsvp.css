@@ -23,9 +23,21 @@
     text-decoration: none;
 }
 
-.lanrsvp-authenticated-message {
+p.lanrsvp-authenticated-message,
+p.lanrsvp-authenticate-message {
     font-style: italic;
-    color: red;
+    font-weight: bold;
+}
+
+#lanrsvp-authenticate form input {
+    width: 100%;
+    -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+    box-sizing: border-box;         /* Opera/IE 8+ */
+}
+
+#lanrsvp-authenticate form input[type="submit"] {
+    width: auto;
 }
 
 #lanrsvp .green {

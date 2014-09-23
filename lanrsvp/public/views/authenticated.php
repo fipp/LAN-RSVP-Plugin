@@ -22,6 +22,7 @@
         }
         echo '<button class="signUp">Sign up</button>';
     }
-    echo '<div class="lanrsvp-authenticated-message"></div>';
+    echo ' <button class="logOut">Log Out</button>';
+    echo '<p class="lanrsvp-authenticated-message"></p>';
     ?>
 </div>
