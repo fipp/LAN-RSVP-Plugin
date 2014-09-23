@@ -47,8 +47,8 @@
                     for (var i = 0; i < refreshed_seats.length; i++) {
                         var seat = refreshed_seats[i];
                         if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
-                            var row = seat['seat_row'];
-                            var column = seat['seat_column'];
+                            var row = parseInt(seat['seat_row']);
+                            var column = parseInt(seat['seat_column']);
                             var repaint_seat = false;
 
                             /*
@@ -66,7 +66,8 @@
                                 (
                                  seats[row] !== undefined ||
                                  seats[row][column] === undefined ||
-                                 seats[row][column]['status'] === 'free'
+                                 seats[row][column]['status'] === 'free' ||
+                                 (row === chosenSeat[0] && column === chosenSeat[1])
                                 )
                             ){
                                 repaint_seat = true;
@@ -74,6 +75,10 @@
                                 seats[row][column]['user_id'] = seat['user_id'];
                                 seats[row][column]['first_name'] = seat['first_name'];
                                 seats[row][column]['last_name'] = seat['last_name'];
+
+                                if (row === chosenSeat[0] && column === chosenSeat[1]) {
+                                    chosenSeat = [undefined, undefined];
+                                }
                             }
 
                             /*
@@ -83,7 +88,8 @@
                             if (seat['user_id'] === null &&
                                 seats[row] !== undefined &&
                                 seats[row][column] !== undefined &&
-                                seats[row][column]['status'] === 'busy'
+                                seats[row][column]['status'] === 'busy' &&
+                                row !== chosenSeat[0] && column !== chosenSeat[1]
                             ){
                                 repaint_seat = true;
                                 seats[row][column] = {};
@@ -415,8 +421,14 @@
         }
 
         function setSeatStatus(cell) {
+
             var row = cell[0];
             var col = cell[1];
+
+            if (row === chosenSeat[0] && col === chosenSeat[1]) {
+                $('#lanrsvp-seat-status').text('Your selected seat.');
+                return;
+            }
 
             $('#lanrsvp-seat-row').text(row);
             $('#lanrsvp-seat-column').text(col);
