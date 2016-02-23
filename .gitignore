@@ -37,3 +37,10 @@ dwsync.xml
 intermediate
 .idea
 cache
+
+# Vagrant
+.vagrant
+.ey_local_data
+latest.tar.gz
+/wordpress/
+/wp-tests/
