@@ -418,6 +418,7 @@ class LanRsvp {
 
                 $attendees = DB::get_attendees($event_id);
                 $attendees_count = count($attendees);
+
                 $attendeesTable = new Attendees_Table($attendees, $is_admin = false, $has_seatmap);
 
                 $seats = null;

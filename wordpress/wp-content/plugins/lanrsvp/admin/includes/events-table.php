@@ -1,5 +1,5 @@
 <?php
-class Events_Table extends WP_List_Table_Copy {
+class Events_Table extends WP_List_Table {
 
     /**
      * Constructor, we override the parent to pass our own arguments

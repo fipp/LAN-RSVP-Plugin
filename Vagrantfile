@@ -14,6 +14,12 @@ Vagrant.configure("2") do |config|
   config.hostsupdater.aliases = %w{www.vagrantpress.dev}
   config.hostsupdater.remove_on_suspend = true
 
+  config.vm.provision :shell do |shell|
+    shell.inline = "mkdir -p /etc/puppet/modules;
+                    puppet module install --force puppetlabs/mysql;
+                    puppet module install --force puppetlabs/stdlib"
+  end
+
   config.vm.provision :puppet do |puppet|
     puppet.manifests_path = "puppet/manifests"
     puppet.module_path = "puppet/modules"

@@ -44,3 +44,14 @@ cache
 latest.tar.gz
 /wordpress/
 /wp-tests/
+
+!wordpress/
+
+wordpress/*
+!wordpress/wp-content/
+
+wordpress/wp-content/*
+!wordpress/wp-content/plugins/
+
+wordpress/wp-content/plugins/*
+!wordpress/wp-content/plugins/lanrsvp/

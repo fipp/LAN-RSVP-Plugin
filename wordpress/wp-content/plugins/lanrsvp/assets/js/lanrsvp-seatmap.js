@@ -34,77 +34,77 @@
 
         drawSeatmap();
 
-        setInterval(function(){
-            var data = {
-                action: 'get_seatmap',
-                event_id: seatmap_data['event_id']
-            };
-
-            $.post(seatmap_data.ajaxurl, data, function(response) {
-                if (response !== undefined && response.length > 0) {
-                    refreshingCells = true;
-                    var refreshed_seats = response;
-                    for (var i = 0; i < refreshed_seats.length; i++) {
-                        var seat = refreshed_seats[i];
-                        if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
-                            var row = parseInt(seat['seat_row']);
-                            var column = parseInt(seat['seat_column']);
-                            var repaint_seat = false;
-
-                            /*
-                            Scenario 1:
-
-                            In case a seat went from undefined to 'busy' since the page was loaded. This can happen if:
-                            1) an admin opens an event for editing in the admin panel
-                            2) then, a user reserves a seat
-                            3) the admin removes that seat, not knowing it was taken after he loaded the page
-                            4) this code gets run
-
-                            Or in case a seat went from 'free' to 'busy' since the page was loaded.
-                            */
-                            if (seat['user_id'] !== null &&
-                                (
-                                 seats[row] !== undefined ||
-                                 seats[row][column] === undefined ||
-                                 seats[row][column]['status'] === 'free' ||
-                                 (row === chosenSeat[0] && column === chosenSeat[1])
-                                )
-                            ){
-                                repaint_seat = true;
-                                seats[row][column]['status'] = 'busy';
-                                seats[row][column]['user_id'] = seat['user_id'];
-                                seats[row][column]['first_name'] = seat['first_name'];
-                                seats[row][column]['last_name'] = seat['last_name'];
-
-                                if (row === chosenSeat[0] && column === chosenSeat[1]) {
-                                    chosenSeat = [undefined, undefined];
-                                }
-                            }
-
-                            /*
-                            Scenario 2:
-                            In case a seat went from 'busy' to 'free' since the page was loaded.
-                            */
-                            if (seat['user_id'] === null &&
-                                seats[row] !== undefined &&
-                                seats[row][column] !== undefined &&
-                                seats[row][column]['status'] === 'busy' &&
-                                row !== chosenSeat[0] && column !== chosenSeat[1]
-                            ){
-                                repaint_seat = true;
-                                seats[row][column] = {};
-                                seats[row][column]['status'] = 'free';
-                            }
-
-                            if (repaint_seat) {
-                                paintSeat([row,column], seats[row][column]['status']);
-                            }
-                        }
-                    }
-                    refreshingCells = false;
-                }
-            }, 'json');
-        }, 5000);
+        //setInterval(function(){
+        //    var data = {
+        //        action: 'get_seatmap',
+        //        event_id: seatmap_data['event_id']
+        //    };
+        //
+        //    $.post(seatmap_data.ajaxurl, data, function(response) {
+        //        if (response !== undefined && response.length > 0) {
+        //            refreshingCells = true;
+        //            var refreshed_seats = response;
+        //            for (var i = 0; i < refreshed_seats.length; i++) {
+        //                var seat = refreshed_seats[i];
+        //                if ('seat_column' in seat && 'seat_row' in seat && 'user_id' in seat) {
+        //                    var row = parseInt(seat['seat_row']);
+        //                    var column = parseInt(seat['seat_column']);
+        //                    var repaint_seat = false;
+        //
+        //                    /*
+        //                    Scenario 1:
+        //
+        //                    In case a seat went from undefined to 'busy' since the page was loaded. This can happen if:
+        //                    1) an admin opens an event for editing in the admin panel
+        //                    2) then, a user reserves a seat
+        //                    3) the admin removes that seat, not knowing it was taken after he loaded the page
+        //                    4) this code gets run
+        //
+        //                    Or in case a seat went from 'free' to 'busy' since the page was loaded.
+        //                    */
+        //                    if (seat['user_id'] !== null &&
+        //                        (
+        //                         seats[row] !== undefined ||
+        //                         seats[row][column] === undefined ||
+        //                         seats[row][column]['status'] === 'free' ||
+        //                         (row === chosenSeat[0] && column === chosenSeat[1])
+        //                        )
+        //                    ){
+        //                        repaint_seat = true;
+        //                        seats[row][column]['status'] = 'busy';
+        //                        seats[row][column]['user_id'] = seat['user_id'];
+        //                        seats[row][column]['first_name'] = seat['first_name'];
+        //                        seats[row][column]['last_name'] = seat['last_name'];
+        //
+        //                        if (row === chosenSeat[0] && column === chosenSeat[1]) {
+        //                            chosenSeat = [undefined, undefined];
+        //                        }
+        //                    }
+        //
+        //                    /*
+        //                    Scenario 2:
+        //                    In case a seat went from 'busy' to 'free' since the page was loaded.
+        //                    */
+        //                    if (seat['user_id'] === null &&
+        //                        seats[row] !== undefined &&
+        //                        seats[row][column] !== undefined &&
+        //                        seats[row][column]['status'] === 'busy' &&
+        //                        row !== chosenSeat[0] && column !== chosenSeat[1]
+        //                    ){
+        //                        repaint_seat = true;
+        //                        seats[row][column] = {};
+        //                        seats[row][column]['status'] = 'free';
+        //                    }
+        //
+        //                    if (repaint_seat) {
+        //                        paintSeat([row,column], seats[row][column]['status']);
+        //                    }
+        //                }
+        //            }
+        //            refreshingCells = false;
+        //        }
+        //    }, 'json');
+        //}, 5000);
 
         function getStoredSeatmap() {
             var seats = [];

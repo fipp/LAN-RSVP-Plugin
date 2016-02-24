@@ -1,6 +1,6 @@
 <?php
 
-class Attendees_Table extends WP_List_Table_Copy
+class Attendees_Table extends WP_List_Table
 {
 
     /**

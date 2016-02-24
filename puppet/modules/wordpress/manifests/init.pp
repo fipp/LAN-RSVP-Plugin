@@ -6,11 +6,13 @@ class wordpress::install {
   exec { 'create-database':
     unless  => '/usr/bin/mysql -u root -pvagrant wordpress',
     command => '/usr/bin/mysql -u root -pvagrant --execute=\'create database wordpress\'',
+    notify  => Service['mysql'],
   }
 
   exec { 'create-user':
     unless  => '/usr/bin/mysql -u wordpress -pwordpress wordpress',
-    command => '/usr/bin/mysql -u root -pvagrant --execute="GRANT ALL PRIVILEGES ON wordpress.* TO \'wordpress\'@\'localhost\' IDENTIFIED BY \'wordpress\'"',
+    command => '/usr/bin/mysql -u root -pvagrant --execute="GRANT ALL PRIVILEGES ON wordpress.* TO \'wordpress\'@\'%\' IDENTIFIED BY \'wordpress\'"',
+    notify  => Service['mysql'],
   }
 
   # Get a new copy of the latest wordpress release
@@ -26,7 +28,7 @@ class wordpress::install {
     cwd     => '/vagrant/',
     command => '/bin/tar xzvf /vagrant/latest.tar.gz',
     require => Exec['download-wordpress'],
-    creates => '/vagrant/wordpress',
+    creates => '/vagrant/wordpress/wp-admin/',
   }
 
   # Import a MySQL database for a basic wordpress site.
@@ -37,6 +39,7 @@ class wordpress::install {
   exec { 'load-db':
     command => '/usr/bin/mysql -u wordpress -pwordpress wordpress < /tmp/wordpress-db.sql && touch /home/vagrant/db-created',
     creates => '/home/vagrant/db-created',
+    notify  => Service['mysql'],
   }
 
   # Copy a working wp-config.php file for the vagrant setup.
@@ -48,11 +51,13 @@ class wordpress::install {
   exec { 'create-tests-database':
     unless  => '/usr/bin/mysql -u root -pvagrant wp_tests',
     command => '/usr/bin/mysql -u root -pvagrant --execute=\'create database wp_tests\'',
+    notify  => Service['mysql'],
   }
 
   exec { 'create-tests-user':
     unless  => '/usr/bin/mysql -u wordpress -pwordpress',
-    command => '/usr/bin/mysql -u root -pvagrant --execute="GRANT ALL PRIVILEGES ON wp_tests.* TO \'wordpress\'@\'localhost\' IDENTIFIED BY \'wordpress\'"',
+    command => '/usr/bin/mysql -u root -pvagrant --execute="GRANT ALL PRIVILEGES ON wp_tests.* TO \'wordpress\'@\'%\' IDENTIFIED BY \'wordpress\'"',
+    notify  => Service['mysql'],
   }
 
   # Copy a working wp-tests-config.php file for the vagrant setup.
