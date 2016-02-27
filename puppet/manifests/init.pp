@@ -10,7 +10,6 @@ exec { 'apt_update':
   command => 'apt-get update',
   path    => '/usr/bin'
 }
-
 class { '::mysql::server':
   root_password    => 'vagrant',
   override_options => {
@@ -19,9 +18,29 @@ class { '::mysql::server':
     }
   }
 }
-->
-class { 'wordpress::install': }
 
+# Copy a working wp-tests-config.php file for the vagrant setup.
+file { '/tmp/wordpress-db.sql':
+  source  => 'puppet:///modules/wordpress/wordpress-db.sql',
+}
+->
+mysql::db { 'wordpress':
+  user     => 'wordpress',
+  password => 'wordpress',
+  host     => '%',
+  grant    => ['ALL PRIVILEGES'],
+  sql      => '/tmp/wordpress-db.sql',
+}
+
+mysql::db { 'wp_tests':
+  user     => 'wordpress',
+  password => 'wordpress',
+  host     => '%',
+  grant    => ['ALL PRIVILEGES'],
+}
+
+
+class { 'wordpress::install': }
 class { 'phpmyadmin::install': }
 #class { 'composer::install': }
 #class { 'phpqa::install': }
