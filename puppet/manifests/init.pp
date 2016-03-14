@@ -4,6 +4,10 @@ Exec { path => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/", "/usr/local/bin"
 #class { 'git::install': }
 #class { 'subversion::install': }
 
+package { 'sendmail':
+  ensure => 'installed',
+}
+
 class { 'apache2::install': }
 class { 'php5::install': }
 exec { 'apt_update':

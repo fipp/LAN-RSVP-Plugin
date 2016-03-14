@@ -3,18 +3,22 @@
 class Attendees_Table extends WP_List_Table
 {
 
+    private $attendees;
+    private $isAdmin;
+    private $has_seatmap;
+
     /**
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
      */
-    function __construct($attendees, $admin = false, $has_seatmap = false)
+    function __construct($attendees, $isAdmin = false, $has_seatmap = false)
     {
-        parent::__construct(array(
+        parent::__construct([
             'singular' => 'lanrsvp-attendee', // Singular label
             'plural' => 'lanrsvp-attendees', // plural label, also this well be one of the table css class
             'ajax' => false, // We won't support Ajax for this table
             'screen' => 'interval-list' // hook suffix
-        ));
+        ]);
 
         if ($has_seatmap) {
             foreach ($attendees as $key => $attendee) {
@@ -28,7 +32,7 @@ class Attendees_Table extends WP_List_Table
 
         $this->attendees = $attendees;
 
-        $this->isAdmin = $admin;
+        $this->isAdmin = $isAdmin;
         $this->has_seatmap = $has_seatmap;
     }
 

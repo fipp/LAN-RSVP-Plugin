@@ -14,15 +14,11 @@ if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ||
         Log in in using your LAN Party Events account to sign up or to unsubscribe to this event.
         If you do not have an account, you can create one below.
     </p>
-    <?php if (!$is_https) { echo '<p style="font-size:0.8em;"><strong>IMPORTANT</strong>: This site\'s traffic is
-        <span class="red">not</span> encrypted with HTTPS, and your password will be sent as clear text when logging in.
-        Be sure to select a unique password for this service, and not one you share with other web services
-        (e.g. Facebook). Read more
-        <a href="http://www.electronicworkplace.com/interesting-stuff/what-you-need-to-know-about-https">here.</a>';} ?>
 
     <p>
         <a href="#" class="logIn">Log in</a> ::
         <a href="#" class="resetPassword">Reset password</a> ::
+        <a href="#" class="resendActivationCode">Resend activation code</a> ::
         <a href="#" class="register">Register new user</a> ::
         <a href="#" class="activate">Activate account</a>
     </p>
@@ -37,6 +33,12 @@ if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ||
         <table>
             <tr><td>E-mail:</td><td><input type="email" name="email" autocomplete='off' required /></td></tr>
             <tr><td colspan="2"><input type="submit" value="Reset password"/></td></tr>
+        </table>
+    </form>
+    <form class="lanrsvp-resendactivationcode-form" style="display:none;">
+        <table>
+            <tr><td>E-mail:</td><td><input type="email" name="email" autocomplete='off' required /></td></tr>
+            <tr><td colspan="2"><input type="submit" value="Resend activation code"/></td></tr>
         </table>
     </form>
     <form class="lanrsvp-register-form" style="display:none;">

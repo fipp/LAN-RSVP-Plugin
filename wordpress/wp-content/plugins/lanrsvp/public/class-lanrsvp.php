@@ -84,6 +84,9 @@ class LanRsvp {
         add_action('wp_ajax_reset_password', array( $this, 'reset_password'));
         add_action('wp_ajax_nopriv_reset_password', array( $this, 'reset_password'));
 
+        add_action('wp_ajax_resend_activationcode', array( $this, 'resend_activationcode'));
+        add_action('wp_ajax_nopriv_resend_activationcode', array( $this, 'resend_activationcode'));
+
         add_action('wp_ajax_register', array( $this, 'register'));
         add_action('wp_ajax_nopriv_register', array( $this, 'register'));
 
@@ -624,13 +627,48 @@ Someone (hopefully you - $email) requested a new password for this LAN RSVP syst
 
 The new password is: $newPassword
 
-Please note that this password is encrypted in our database, and not stored as clear text.
-
 Best Regards,
 The LAN Party Events Plugin, on behalf of $site_url.
 HTML;
                 wp_mail( $email, $subject, $message );
             }
+        } catch (Exception $e) {
+            echo $e->getMessage();
+        }
+        die();
+    }
+
+    function resend_activationcode() {
+        try {
+            $_REQUEST = self::checkAndTrimParams(['email'], $_REQUEST);
+
+            $email = $_REQUEST['email'];
+            $user = DB::get_user(null, $email);
+            if (!is_array($user)) {
+                throw new Exception("The user account '$email' could not be found. Please provide an existing account.");
+            }
+
+            if ($user['is_activated'] == '1') {
+                throw new Exception("The user account '$email' is already activated.");
+            }
+
+            $firstName = $user['first_name'];
+            $lastName = $user['last_name'];
+
+            $activation_code = $user['activation_code'];
+            $subject = "LAN Party Events Plugin - Your activation code";
+            $site_url = site_url();
+            $message = <<<HTML
+Dear $firstName $lastName!
+
+Someone (hopefully you - $email) requested the activation code to be resent for the LAN RSVP system account on $site_url.
+
+The activation code is is: $activation_code
+
+Best Regards,
+The LAN Party Events Plugin, on behalf of $site_url.
+HTML;
+            wp_mail( $email, $subject, $message );
         } catch (Exception $e) {
             echo $e->getMessage();
         }

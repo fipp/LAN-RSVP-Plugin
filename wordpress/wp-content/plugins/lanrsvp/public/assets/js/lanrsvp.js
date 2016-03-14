@@ -23,6 +23,10 @@
                     $('h2.lanrsvp-authenticate-title').text('Reset password');
                     $('form.lanrsvp-resetpassword-form').show();
                     break;
+                case 'resendActivationCode':
+                    $('h2.lanrsvp-authenticate-title').text('Resend activation code');
+                    $('form.lanrsvp-resendactivationcode-form').show();
+                    break;
                 case 'register':
                     $('h2.lanrsvp-authenticate-title').text('Register new user');
                     $('form.lanrsvp-register-form').show();
@@ -43,6 +47,9 @@
                     break;
                 case 'lanrsvp-resetpassword-form':
                     doResetPassword($(this));
+                    break;
+                case 'lanrsvp-resendactivationcode-form':
+                    doResendActivationCode($(this));
                     break;
                 case 'lanrsvp-register-form':
                     doRegister($(this));
@@ -143,6 +150,29 @@
                     $('form.lanrsvp-login-form').find('input[type=text], textarea').val('');
                     $('form.lanrsvp-login-form').find('input[name="email"]').val(data['email']);
                     $('form.lanrsvp-login-form').show();
+                }
+            });
+        }
+
+        function doResendActivationCode(form) {
+            var email = form.find('input[name="email"]').val()
+
+            var data = {
+                action: 'resend_activationcode',
+                email: email
+            };
+
+            $.post( LanRsvp.ajaxurl, data, function(response) {
+                if (response.length > 0) {
+                    $('p.lanrsvp-authenticate-message').html(response);
+                } else {
+                    var html = "<p>Activation code sent. Please check your e-mail.</p>";
+                    $('p.lanrsvp-authenticate-message').html(html);
+                    $('div#lanrsvp-authenticate form').hide();
+
+                    $('form.lanrsvp-activate-form').find('input[type=text], textarea').val('');
+                    $('form.lanrsvp-activate-form').find('input[name="email"]').val(email);
+                    $('form.lanrsvp-activate-form').show();
                 }
             });
         }

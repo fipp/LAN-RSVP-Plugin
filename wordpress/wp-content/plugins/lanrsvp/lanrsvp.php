@@ -29,18 +29,15 @@ if ( ! defined( 'WPINC' ) ) {
  * Common classes
  *----------------------------------------------------------------------------*/
 require_once( ABSPATH . 'wp-includes/class-phpass.php');
-if (!is_admin()) {
-    // Required to use wp-list-table outside admin context
-	if ( ! class_exists( 'WP_List_Table' ) ) {
-		require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
-	}
-	if ( ! class_exists('WP_Screen') ) {
-		require_once( ABSPATH . 'wp-admin/includes/screen.php' );
-	}
-	require_once( ABSPATH . 'wp-admin/includes/class-wp-screen.php' );
-	require_once( ABSPATH . 'wp-admin/includes/template.php' );
-}
 
+if ( ! class_exists( 'WP_List_Table' ) ) {
+	require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
+}
+if ( ! class_exists('WP_Screen') ) {
+	require_once( ABSPATH . 'wp-admin/includes/screen.php' );
+}
+require_once( ABSPATH . 'wp-admin/includes/class-wp-screen.php' );
+require_once( ABSPATH . 'wp-admin/includes/template.php' );
 
 require_once( plugin_dir_path( __FILE__ ) . 'includes/class-db.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'includes/attendees-table.php' );

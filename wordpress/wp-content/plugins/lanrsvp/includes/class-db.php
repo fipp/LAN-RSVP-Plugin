@@ -412,7 +412,8 @@ class DB {
         $seat_table_name = $wpdb->prefix . self::SEAT_TABLE_NAME;
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT user_id FROM $seat_table_name WHERE seat_row = %d AND seat_column = %d",
+                "SELECT user_id FROM $seat_table_name WHERE event_id = %d AND seat_row = %d AND seat_column = %d",
+                $event_id,
                 $seat_row,
                 $seat_col
             )
