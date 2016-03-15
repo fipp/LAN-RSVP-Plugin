@@ -47,3 +47,7 @@ p.lanrsvp-authenticate-message {
 #lanrsvp .red {
     color: red;
 }
+
+#lanrsvp .wp-list-table .toggle-row {
+    display: none;
+}

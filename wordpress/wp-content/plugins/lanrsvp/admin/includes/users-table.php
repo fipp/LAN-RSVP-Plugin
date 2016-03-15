@@ -1,6 +1,8 @@
 <?php
 class Users_Table extends WP_List_Table {
 
+    private $users;
+
     /**
      * Constructor, we override the parent to pass our own arguments
      * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
