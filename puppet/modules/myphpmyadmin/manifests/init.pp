@@ -1,7 +1,4 @@
-# Install phpMyAdmin
-
-class phpmyadmin::install {
-
+class myphpmyadmin::install {
   package { 'phpmyadmin':
     ensure => present,
   }
@@ -12,5 +9,4 @@ class phpmyadmin::install {
     require => Package['apache2'],
     notify  => Service['apache2'],
   }
-
 }

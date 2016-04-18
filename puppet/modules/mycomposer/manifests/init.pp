@@ -1,7 +1,4 @@
-# Install composer
-
-class composer::install {
-
+class mycomposer::install {
   package { "curl":
     ensure => installed,
   }
@@ -11,5 +8,4 @@ class composer::install {
     environment => ["COMPOSER_HOME=/usr/local/bin"],
     require => Package['curl'],
   }
-
 }

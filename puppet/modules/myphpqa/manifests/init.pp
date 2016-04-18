@@ -1,6 +1,4 @@
-# Install the PHP Quality Assurance Toolchain
-
-class phpqa::install{
+class myphpqa::install{
 
 	# install phpunit
   exec { "composer install phpunit":
@@ -58,6 +56,4 @@ class phpqa::install{
     environment => ["COMPOSER_HOME=/usr/local/bin"],
     require => Exec['install composer']
   }
-  
-
 }

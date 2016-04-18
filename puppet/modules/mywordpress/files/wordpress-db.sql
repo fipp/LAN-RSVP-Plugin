@@ -394,7 +394,7 @@ TRUNCATE TABLE `wp_options`;
 --
 
 INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`) VALUES
-(1, 'siteurl', 'http://vagrantpress.dev/', 'yes'),
+(1, 'siteurl', 'http://wordpress.seatmapevents.dev/', 'yes'),
 (2, 'blogname', 'Vagrant', 'yes'),
 (3, 'blogdescription', 'Just another WordPress site', 'yes'),
 (4, 'users_can_register', '0', 'yes'),
@@ -425,7 +425,7 @@ INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`
 (33, 'blog_charset', 'UTF-8', 'yes'),
 (34, 'moderation_keys', '', 'no'),
 (35, 'active_plugins', 'a:1:{i:0;s:19:"lanrsvp/lanrsvp.php";}', 'yes'),
-(36, 'home', 'http://vagrantpress.dev/', 'yes'),
+(36, 'home', 'http://wordpress.seatmapevents.dev/', 'yes'),
 (37, 'category_base', '', 'yes'),
 (38, 'ping_sites', 'http://rpc.pingomatic.com/', 'yes'),
 (40, 'comment_max_links', '2', 'yes'),
@@ -630,15 +630,15 @@ TRUNCATE TABLE `wp_posts`;
 --
 
 INSERT INTO `wp_posts` (`ID`, `post_author`, `post_date`, `post_date_gmt`, `post_content`, `post_title`, `post_excerpt`, `post_status`, `comment_status`, `ping_status`, `post_password`, `post_name`, `to_ping`, `pinged`, `post_modified`, `post_modified_gmt`, `post_content_filtered`, `post_parent`, `guid`, `menu_order`, `post_type`, `post_mime_type`, `comment_count`) VALUES
-(1, 1, '2013-01-22 20:29:46', '2013-01-22 20:29:46', 'Welcome to WordPress. This is your first post. Edit or delete it, then start blogging!', 'Hello world!', '', 'publish', 'open', 'open', '', 'hello-world', '', '', '2013-01-22 20:29:46', '2013-01-22 20:29:46', '', 0, 'http://vagrantpress.dev/?p=1', 0, 'post', '', 1),
-(2, 1, '2013-01-22 20:29:46', '2013-01-22 20:29:46', 'This is an example page. It''s different from a blog post because it will stay in one place and will show up in your site navigation (in most themes). Most people start with an About page that introduces them to potential site visitors. It might say something like this:\n\n<blockquote>Hi there! I''m a bike messenger by day, aspiring actor by night, and this is my blog. I live in Los Angeles, have a great dog named Jack, and I like pi&#241;a coladas. (And gettin'' caught in the rain.)</blockquote>\n\n...or something like this:\n\n<blockquote>The XYZ Doohickey Company was founded in 1971, and has been providing quality doohickeys to the public ever since. Located in Gotham City, XYZ employs over 2,000 people and does all kinds of awesome things for the Gotham community.</blockquote>\n\nAs a new WordPress user, you should go to <a href="http://vagrantpress.dev/wp-admin/">your dashboard</a> to delete this page and create new pages for your content. Have fun!', 'Sample Page', '', 'publish', 'open', 'open', '', 'sample-page', '', '', '2013-01-22 20:29:46', '2013-01-22 20:29:46', '', 0, 'http://vagrantpress.dev/?page_id=2', 0, 'page', '', 0),
-(3, 1, '2016-02-24 20:49:13', '0000-00-00 00:00:00', '', 'Auto Draft', '', 'auto-draft', 'open', 'open', '', '', '', '', '2016-02-24 20:49:13', '0000-00-00 00:00:00', '', 0, 'http://vagrantpress.dev/?p=3', 0, 'post', '', 0),
-(4, 1, '2016-02-24 21:18:12', '2016-02-24 21:18:12', '[lanrsvp event_id="1"]', 'LANRSVP Event 1', '', 'publish', 'closed', 'closed', '', 'lanrsvp-event-1', '', '', '2016-02-24 21:18:12', '2016-02-24 21:18:12', '', 0, 'http://vagrantpress.dev/?page_id=4', 0, 'page', '', 0),
-(5, 1, '2016-02-24 21:18:12', '2016-02-24 21:18:12', '[lanrsvp event_id="1"]', 'LANRSVP Event 1', '', 'inherit', 'closed', 'closed', '', '4-revision-v1', '', '', '2016-02-24 21:18:12', '2016-02-24 21:18:12', '', 4, 'http://vagrantpress.dev/?p=5', 0, 'revision', '', 0),
-(6, 1, '2016-02-24 21:18:40', '2016-02-24 21:18:40', '[lanrsvp event_id="2"]', 'LANRSVP Event 2', '', 'publish', 'closed', 'closed', '', 'lanrsvp-event-2', '', '', '2016-02-24 21:18:40', '2016-02-24 21:18:40', '', 0, 'http://vagrantpress.dev/?page_id=6', 0, 'page', '', 0),
-(7, 1, '2016-02-24 21:18:40', '2016-02-24 21:18:40', '[lanrsvp event_id="2"]', 'LANRSVP Event 2', '', 'inherit', 'closed', 'closed', '', '6-revision-v1', '', '', '2016-02-24 21:18:40', '2016-02-24 21:18:40', '', 6, 'http://vagrantpress.dev/?p=7', 0, 'revision', '', 0),
-(8, 1, '2016-02-24 21:19:31', '2016-02-24 21:19:31', ' ', '', '', 'publish', 'closed', 'closed', '', '8', '', '', '2016-02-24 21:19:31', '2016-02-24 21:19:31', '', 0, 'http://vagrantpress.dev/?p=8', 1, 'nav_menu_item', '', 0),
-(9, 1, '2016-02-24 21:19:31', '2016-02-24 21:19:31', ' ', '', '', 'publish', 'closed', 'closed', '', '9', '', '', '2016-02-24 21:19:31', '2016-02-24 21:19:31', '', 0, 'http://vagrantpress.dev/?p=9', 2, 'nav_menu_item', '', 0);
+(1, 1, '2013-01-22 20:29:46', '2013-01-22 20:29:46', 'Welcome to WordPress. This is your first post. Edit or delete it, then start blogging!', 'Hello world!', '', 'publish', 'open', 'open', '', 'hello-world', '', '', '2013-01-22 20:29:46', '2013-01-22 20:29:46', '', 0, 'http://wordpress.seatmapevents.dev/?p=1', 0, 'post', '', 1),
+(2, 1, '2013-01-22 20:29:46', '2013-01-22 20:29:46', 'This is an example page. It''s different from a blog post because it will stay in one place and will show up in your site navigation (in most themes). Most people start with an About page that introduces them to potential site visitors. It might say something like this:\n\n<blockquote>Hi there! I''m a bike messenger by day, aspiring actor by night, and this is my blog. I live in Los Angeles, have a great dog named Jack, and I like pi&#241;a coladas. (And gettin'' caught in the rain.)</blockquote>\n\n...or something like this:\n\n<blockquote>The XYZ Doohickey Company was founded in 1971, and has been providing quality doohickeys to the public ever since. Located in Gotham City, XYZ employs over 2,000 people and does all kinds of awesome things for the Gotham community.</blockquote>\n\nAs a new WordPress user, you should go to <a href="http://wordpress.seatmapevents.dev/wp-admin/">your dashboard</a> to delete this page and create new pages for your content. Have fun!', 'Sample Page', '', 'publish', 'open', 'open', '', 'sample-page', '', '', '2013-01-22 20:29:46', '2013-01-22 20:29:46', '', 0, 'http://wordpress.seatmapevents.dev/?page_id=2', 0, 'page', '', 0),
+(3, 1, '2016-02-24 20:49:13', '0000-00-00 00:00:00', '', 'Auto Draft', '', 'auto-draft', 'open', 'open', '', '', '', '', '2016-02-24 20:49:13', '0000-00-00 00:00:00', '', 0, 'http://wordpress.seatmapevents.dev/?p=3', 0, 'post', '', 0),
+(4, 1, '2016-02-24 21:18:12', '2016-02-24 21:18:12', '[lanrsvp event_id="1"]', 'LANRSVP Event 1', '', 'publish', 'closed', 'closed', '', 'lanrsvp-event-1', '', '', '2016-02-24 21:18:12', '2016-02-24 21:18:12', '', 0, 'http://wordpress.seatmapevents.dev/?page_id=4', 0, 'page', '', 0),
+(5, 1, '2016-02-24 21:18:12', '2016-02-24 21:18:12', '[lanrsvp event_id="1"]', 'LANRSVP Event 1', '', 'inherit', 'closed', 'closed', '', '4-revision-v1', '', '', '2016-02-24 21:18:12', '2016-02-24 21:18:12', '', 4, 'http://wordpress.seatmapevents.dev/?p=5', 0, 'revision', '', 0),
+(6, 1, '2016-02-24 21:18:40', '2016-02-24 21:18:40', '[lanrsvp event_id="2"]', 'LANRSVP Event 2', '', 'publish', 'closed', 'closed', '', 'lanrsvp-event-2', '', '', '2016-02-24 21:18:40', '2016-02-24 21:18:40', '', 0, 'http://wordpress.seatmapevents.dev/?page_id=6', 0, 'page', '', 0),
+(7, 1, '2016-02-24 21:18:40', '2016-02-24 21:18:40', '[lanrsvp event_id="2"]', 'LANRSVP Event 2', '', 'inherit', 'closed', 'closed', '', '6-revision-v1', '', '', '2016-02-24 21:18:40', '2016-02-24 21:18:40', '', 6, 'http://wordpress.seatmapevents.dev/?p=7', 0, 'revision', '', 0),
+(8, 1, '2016-02-24 21:19:31', '2016-02-24 21:19:31', ' ', '', '', 'publish', 'closed', 'closed', '', '8', '', '', '2016-02-24 21:19:31', '2016-02-24 21:19:31', '', 0, 'http://wordpress.seatmapevents.dev/?p=8', 1, 'nav_menu_item', '', 0),
+(9, 1, '2016-02-24 21:19:31', '2016-02-24 21:19:31', ' ', '', '', 'publish', 'closed', 'closed', '', '9', '', '', '2016-02-24 21:19:31', '2016-02-24 21:19:31', '', 0, 'http://wordpress.seatmapevents.dev/?p=9', 2, 'nav_menu_item', '', 0);
 
 -- --------------------------------------------------------
 
