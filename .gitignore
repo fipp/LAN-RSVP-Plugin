@@ -55,3 +55,14 @@ wordpress/wp-content/*
 
 wordpress/wp-content/plugins/*
 !wordpress/wp-content/plugins/lanrsvp/
+
+!craft
+
+craft/*
+!craft/craft
+
+craft/craft/*
+!craft/craft/plugins/
+
+craft/craft/plugins/*
+!craft/craft/plugins/seatmapevents/
