@@ -45,6 +45,11 @@ latest.tar.gz
 /wordpress/
 /wp-tests/
 
+# Installation files
+craft-latest.zip
+wordpress-latest.tar.gz
+
+# Ignore everything under /wordpress except plugin folder
 !wordpress/
 
 wordpress/*
@@ -56,6 +61,7 @@ wordpress/wp-content/*
 wordpress/wp-content/plugins/*
 !wordpress/wp-content/plugins/lanrsvp/
 
+# Ignore everything under /craft except plugin folder
 !craft
 
 craft/*
