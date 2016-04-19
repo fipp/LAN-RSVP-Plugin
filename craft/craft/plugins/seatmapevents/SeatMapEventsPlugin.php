@@ -19,7 +19,7 @@ class SeatMapEventsPlugin extends BasePlugin {
   }
 
   function getName() {
-    return Craft::t('Seat Map Events')
+    return Craft::t('Seat Map Events');
   }
 
   function getVersion() {
