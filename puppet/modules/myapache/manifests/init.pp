@@ -34,18 +34,18 @@ class myapache::install {
   apache::vhost { 'wordpress.seatmapevents.dev':
     port     => '80',
 		priority => 25,
-    docroot  => '/vagrant/wordpress/',
+    docroot  => '/vagrant/wordpress',
   }
 
   apache::vhost { 'craft.seatmapevents.dev':
     port     => '80',
 		priority => 25,
-    docroot  => '/vagrant/craft/public/',
+    docroot  => '/vagrant/craft/public',
     rewrites => [
       {
         comment      => 'https://craftcms.com/support/remove-index.php',
         rewrite_cond => ['%{REQUEST_FILENAME} !-f', '%{REQUEST_FILENAME} !-d', '%{REQUEST_URI} !^/(favicon\.ico|apple-touch-icon.*\.png)$ [NC]'],
-        rewrite_rule => ['^(.+) index.php?p=$1 [QSA,L]'],
+        rewrite_rule => ['^(.+) /index.php?p=$1 [QSA,L]'],
       },
     ],
   }

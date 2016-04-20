@@ -28,6 +28,7 @@ class mymysql::install {
     password => 'craft',
     host     => '%',
     grant    => ['ALL PRIVILEGES'],
+    sql      => '/tmp/craft-db.sql',
   }
 
 }

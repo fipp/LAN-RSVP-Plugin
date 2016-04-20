@@ -11,3 +11,6 @@ http://wordpress.seatmapevents.dev
 
 http://craft.seatmapevents.dev
  - admin/craft
+
+http://seatmapevents.dev/phpmyadmin
+ - root/vagrant
